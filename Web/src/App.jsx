@@ -4,6 +4,7 @@ import History from "./command/history.jsx";
 import Incidents from "./command/incidents.jsx";
 import Dispatch from "./command/dispatch.jsx";
 import Logistics from "./command/logistics.jsx";
+import ResponderManagement from "./command/responder-management.jsx";
 import "./App.css";
 
 function App() {
@@ -130,6 +131,7 @@ function App() {
     incidents: "Incidents Map",
     dispatch: "Dispatch Center",
     logistics: "Logistics & Resources",
+    "responder-management": "Responder Management",
     settings: "Settings",
   };
 
@@ -148,6 +150,8 @@ function App() {
         return <Dispatch dispatchedTeams={dispatchedTeams} setDispatchedTeams={setDispatchedTeams} resolvedIncidents={resolvedIncidents} setResolvedIncidents={setResolvedIncidents} />;
       case "logistics":
         return <Logistics />;
+      case "responder-management":
+        return <ResponderManagement />;
       case "settings":
         return (
           <div className="page">
@@ -210,6 +214,16 @@ function App() {
             href="#"
           >
             Logistics
+          </a>
+          <a
+            className={`nav-item ${currentPage === "responder-management" ? "active" : ""}`}
+            onClick={(e) => {
+              e.preventDefault();
+              setCurrentPage("responder-management");
+            }}
+            href="#"
+          >
+            Responder Management
           </a>
           <a
             className={`nav-item ${currentPage === "settings" ? "active" : ""}`}

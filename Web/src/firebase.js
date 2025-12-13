@@ -11,7 +11,7 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { initializeApp } from "firebase/app";
-import { getAuth, createUserWithEmailAndPassword, signOut } from "firebase/auth";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "firebase/auth";
 // Reuse the shared Firebase app/db from the backend config
 import backendApp, { db as backendDb } from "../../Backend/firebase.config.js";
 
@@ -81,25 +81,90 @@ export const subscribeToResponders = (callback) => {
   });
 };
 
-export const createResponderAccount = async ({ email, password, name, phone, zone, role = "responder" }) => {
-  const cred = await createUserWithEmailAndPassword(secondaryAuth, email, password);
-  const uid = cred.user.uid;
-  await setDoc(doc(db, "responders", uid), {
-    email,
-    name: name || "",
-    phone: phone || "",
-    zone: zone || "",
-    role,
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  });
-  await signOut(secondaryAuth);
-  return uid;
+export const createResponderAccount = async ({ email, password, name, phone }) => {
+  try {
+    // Validate password before proceeding
+    if (!password || password.length < 6) {
+      throw new Error("Password must be at least 6 characters long");
+    }
+    
+    console.log("Creating Firebase Auth user with email:", email, "Password length:", password.length);
+    
+    // Create Firebase Auth user with email and password
+    // Email and password are stored securely in Firebase Authentication (password is hashed)
+    const cred = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+    const uid = cred.user.uid;
+    
+    console.log("✓ Firebase Auth user created successfully!");
+    console.log("  - UID:", uid);
+    console.log("  - Email:", email);
+    console.log("  - Email verified:", cred.user.emailVerified);
+    
+    // Verify the account works by testing sign-in (then sign out immediately)
+    try {
+      await signOut(secondaryAuth);
+      const testSignIn = await signInWithEmailAndPassword(secondaryAuth, email, password);
+      console.log("✓ Password verification successful - account can be authenticated");
+      await signOut(secondaryAuth);
+    } catch (verifyError) {
+      console.error("⚠ Warning: Password verification failed:", verifyError);
+      // Don't throw here - account was created, but log the issue
+    }
+    
+    // Store responder data in Firestore "responders" collection
+    // Password is stored as plain string in Firestore as requested
+    await setDoc(doc(db, "responders", uid), {
+      email,
+      password: password, // Store password as string in Firestore
+      name: name || "",
+      phone: phone || "",
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+    
+    console.log("✓ Responder document created in Firestore with UID:", uid);
+    
+    // Ensure we're signed out from secondary auth
+    await signOut(secondaryAuth);
+    
+    return uid;
+  } catch (error) {
+    console.error("✗ Error in createResponderAccount:", error);
+    console.error("  - Error code:", error.code);
+    console.error("  - Error message:", error.message);
+    
+    // Re-throw with more context
+    if (error.code === 'auth/email-already-in-use') {
+      throw new Error("This email is already registered. Please use a different email.");
+    } else if (error.code === 'auth/weak-password') {
+      throw new Error("Password is too weak. Please use a stronger password (minimum 6 characters).");
+    } else if (error.code === 'auth/invalid-email') {
+      throw new Error("Invalid email address. Please check the email format.");
+    } else if (error.code === 'auth/operation-not-allowed') {
+      throw new Error("Email/password accounts are not enabled. Please enable them in Firebase Console.");
+    } else {
+      throw new Error(error.message || "Failed to create responder account. Please try again.");
+    }
+  }
 };
 
 export const updateResponder = async (id, data) => {
   const ref = doc(db, "responders", id);
   await updateDoc(ref, { ...data, updatedAt: serverTimestamp() });
+};
+
+// Helper function to test authentication (for debugging)
+export const testResponderLogin = async (email, password) => {
+  try {
+    console.log("Testing login with email:", email);
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    console.log("✓ Login successful! User UID:", userCredential.user.uid);
+    await signOut(auth);
+    return { success: true, uid: userCredential.user.uid };
+  } catch (error) {
+    console.error("✗ Login failed:", error.code, error.message);
+    return { success: false, error: error.message, code: error.code };
+  }
 };
 
 export { app, db, auth };
