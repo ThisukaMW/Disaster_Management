@@ -57,7 +57,7 @@ const pinIcon = L.icon({
   className: "custom-pin",
 });
 
-function Dashboard({ dispatchedTeams = [] }) {
+function Dashboard({ dispatchedTeams = [], resolvedIncidents = [] }) {
   const [incidents, setIncidents] = useState([]);
   const [tableIncidents, setTableIncidents] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
@@ -196,8 +196,8 @@ function Dashboard({ dispatchedTeams = [] }) {
         </div>
         <div className="summary-card">
           <p className="label">Resolved today</p>
-          <p className="value success">—</p>
-          <p className="muted">Coming soon</p>
+          <p className="value success">{resolvedIncidents.length}</p>
+          <p className="muted">Cases completed</p>
         </div>
       </section>
 

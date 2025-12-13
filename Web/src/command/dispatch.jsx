@@ -44,7 +44,7 @@ const pinIcon = L.icon({
   className: "custom-pin",
 });
 
-function Dispatch({ dispatchedTeams = [], setDispatchedTeams }) {
+function Dispatch({ dispatchedTeams = [], setDispatchedTeams, resolvedIncidents = [], setResolvedIncidents }) {
   const [incidents, setIncidents] = useState([]);
   const [dispatchState, setDispatchState] = useState({});
   const [mapIncident, setMapIncident] = useState(null);
@@ -57,60 +57,141 @@ function Dispatch({ dispatchedTeams = [], setDispatchedTeams }) {
     return () => unsubscribe();
   }, []);
 
-  // Sync dispatch state with dispatchedTeams array
+  // Load dispatch state from sessionStorage on mount
   useEffect(() => {
-    if (dispatchedTeams && dispatchedTeams.length > 0) {
-      setDispatchState((prev) => {
-        const updated = { ...prev };
-        dispatchedTeams.forEach((team) => {
-          updated[team.incidentId] = {
-            status: "Dispatched",
-            at: team.dispatchedAt,
+    try {
+      const stored = sessionStorage.getItem("dispatchState");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        setDispatchState(parsed);
+      }
+    } catch (error) {
+      console.error("Error loading dispatch state from sessionStorage:", error);
+    }
+  }, []);
+
+  // Save dispatch state to sessionStorage whenever it changes
+  useEffect(() => {
+    try {
+      sessionStorage.setItem("dispatchState", JSON.stringify(dispatchState));
+    } catch (error) {
+      console.error("Error saving dispatch state to sessionStorage:", error);
+    }
+  }, [dispatchState]);
+
+  // Sync dispatch state with dispatchedTeams and resolvedIncidents arrays
+  useEffect(() => {
+    setDispatchState((prev) => {
+      const updated = { ...prev };
+      
+      // Sync resolved incidents first (they take priority)
+      if (resolvedIncidents && resolvedIncidents.length > 0) {
+        resolvedIncidents.forEach((resolved) => {
+          updated[resolved.incidentId] = {
+            status: "Resolved",
+            at: resolved.dispatchedAt,
+            resolvedAt: resolved.resolvedAt,
           };
         });
-        return updated;
-      });
-    }
-  }, [dispatchedTeams]);
+      }
+      
+      // Then sync dispatched teams (only if not already resolved)
+      if (dispatchedTeams && dispatchedTeams.length > 0) {
+        dispatchedTeams.forEach((team) => {
+          // Only update if status is not already "Resolved"
+          if (updated[team.incidentId]?.status !== "Resolved") {
+            updated[team.incidentId] = {
+              status: "Dispatched",
+              at: team.dispatchedAt,
+            };
+          }
+        });
+      }
+      
+      return updated;
+    });
+  }, [dispatchedTeams, resolvedIncidents]);
 
   const handleDispatch = (incidentId) => {
     // Find the incident being dispatched
     const incident = incidents.find((inc) => inc.id === incidentId);
     
     if (incident) {
-      // Update local dispatch state
-      setDispatchState((prev) => ({
-        ...prev,
-        [incidentId]: {
-          status: "Dispatched",
-          at: new Date().toISOString(),
-        },
-      }));
+      const currentStatus = dispatchState[incidentId]?.status || "Not dispatched";
+      
+      if (currentStatus === "Not dispatched") {
+        // First click: Change to "Dispatched"
+        setDispatchState((prev) => ({
+          ...prev,
+          [incidentId]: {
+            status: "Dispatched",
+            at: new Date().toISOString(),
+          },
+        }));
 
-      // Add to dispatched teams array (if not already dispatched)
-      if (setDispatchedTeams) {
-        setDispatchedTeams((prev) => {
-          // Check if this incident is already in the array
-          const alreadyDispatched = prev.some((team) => team.incidentId === incidentId);
-          if (alreadyDispatched) {
-            return prev; // Don't add duplicates
-          }
-          
-          // Add new dispatched team object
-          return [
-            ...prev,
-            {
-              incidentId: incidentId,
-              incidentType: incident.incidentType || "Unknown",
-              severity: incident.severity,
-              latitude: incident.latitude,
-              longitude: incident.longitude,
-              dispatchedAt: new Date().toISOString(),
-              incident: incident, // Store full incident object
-            },
-          ];
-        });
+        // Add to dispatched teams array (if not already dispatched)
+        if (setDispatchedTeams) {
+          setDispatchedTeams((prev) => {
+            // Check if this incident is already in the array
+            const alreadyDispatched = prev.some((team) => team.incidentId === incidentId);
+            if (alreadyDispatched) {
+              return prev; // Don't add duplicates
+            }
+            
+            // Add new dispatched team object
+            return [
+              ...prev,
+              {
+                incidentId: incidentId,
+                incidentType: incident.incidentType || "Unknown",
+                severity: incident.severity,
+                latitude: incident.latitude,
+                longitude: incident.longitude,
+                dispatchedAt: new Date().toISOString(),
+                incident: incident, // Store full incident object
+              },
+            ];
+          });
+        }
+      } else if (currentStatus === "Dispatched") {
+        // Second click: Change to "Resolved"
+        const resolvedAt = new Date().toISOString();
+        setDispatchState((prev) => ({
+          ...prev,
+          [incidentId]: {
+            status: "Resolved",
+            at: prev[incidentId].at,
+            resolvedAt: resolvedAt,
+          },
+        }));
+
+        // Add to resolved incidents array (if not already resolved)
+        if (setResolvedIncidents) {
+          setResolvedIncidents((prev) => {
+            // Check if this incident is already in the array
+            const alreadyResolved = prev.some((resolved) => resolved.incidentId === incidentId);
+            if (alreadyResolved) {
+              return prev; // Don't add duplicates
+            }
+            
+            // Add new resolved incident object
+            return [
+              ...prev,
+              {
+                incidentId: incidentId,
+                incidentType: incident.incidentType || "Unknown",
+                severity: incident.severity,
+                latitude: incident.latitude,
+                longitude: incident.longitude,
+                dispatchedAt: dispatchState[incidentId]?.at || new Date().toISOString(),
+                resolvedAt: resolvedAt,
+                incident: incident, // Store full incident object
+              },
+            ];
+          });
+        }
       }
+      // If already "Resolved", do nothing (button will be disabled)
     }
   };
 
@@ -145,9 +226,17 @@ function Dispatch({ dispatchedTeams = [], setDispatchedTeams }) {
             </div>
           ) : (
             incidents.map((incident) => {
-              const dispatched = statusLabel(incident.id) === "Dispatched";
+              const status = statusLabel(incident.id);
+              const isDispatched = status === "Dispatched";
+              const isResolved = status === "Resolved";
+              const isNotDispatched = status === "Not dispatched";
+              
               return (
-                <div key={incident.id} className="table-row" role="row">
+                <div 
+                  key={incident.id} 
+                  className={`table-row ${isResolved ? "resolved-row" : ""}`} 
+                  role="row"
+                >
                   <span>{incident.incidentType || "N/A"}</span>
                   <span>{incident.severity ?? "N/A"}</span>
                   <span>
@@ -161,6 +250,7 @@ function Dispatch({ dispatchedTeams = [], setDispatchedTeams }) {
                         className="map-btn"
                         onClick={() => setMapIncident(incident)}
                         aria-label="View incident on map"
+                        disabled={isResolved}
                       >
                         View
                       </button>
@@ -170,17 +260,25 @@ function Dispatch({ dispatchedTeams = [], setDispatchedTeams }) {
                   </span>
                   <span>{formatDate(incident.createdAt)}</span>
                   <span>
-                    <span className={`status-pill ${dispatched ? "status-live" : "status-idle"}`}>
-                      {dispatched ? "Dispatched" : "Not dispatched"}
+                    <span className={`status-pill ${
+                      isResolved ? "status-resolved" : 
+                      isDispatched ? "status-live" : 
+                      "status-idle"
+                    }`}>
+                      {status}
                     </span>
                   </span>
                   <span>
                     <button
-                      className="dispatch-btn"
-                      disabled={dispatched}
+                      className={`dispatch-btn ${
+                        isResolved ? "resolved" : 
+                        isDispatched ? "pending-resolve" : 
+                        ""
+                      }`}
+                      disabled={isResolved}
                       onClick={() => handleDispatch(incident.id)}
                     >
-                      {dispatched ? "Sent" : "Dispatch"}
+                      {isResolved ? "Resolved" : isDispatched ? "Resolve" : "Dispatch"}
                     </button>
                   </span>
                 </div>

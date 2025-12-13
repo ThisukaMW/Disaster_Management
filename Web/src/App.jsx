@@ -32,6 +32,29 @@ function App() {
     }
   }, [dispatchedTeams]);
 
+  // Load resolved incidents from sessionStorage on mount
+  const loadResolvedIncidents = () => {
+    try {
+      const stored = sessionStorage.getItem("resolvedIncidents");
+      return stored ? JSON.parse(stored) : [];
+    } catch (error) {
+      console.error("Error loading resolved incidents from sessionStorage:", error);
+      return [];
+    }
+  };
+
+  // Shared state for resolved incidents - array of resolved incident objects
+  const [resolvedIncidents, setResolvedIncidents] = useState(() => loadResolvedIncidents());
+
+  // Save resolved incidents to sessionStorage whenever it changes
+  useEffect(() => {
+    try {
+      sessionStorage.setItem("resolvedIncidents", JSON.stringify(resolvedIncidents));
+    } catch (error) {
+      console.error("Error saving resolved incidents to sessionStorage:", error);
+    }
+  }, [resolvedIncidents]);
+
   const incidentsSeed = useMemo(
     () => [
       {
@@ -116,13 +139,13 @@ function App() {
       case "dashboard":
         return (
           <>
-            <Dashboard liveIncidents={liveIncidents} historyItems={historyItems} dispatchedTeams={dispatchedTeams} />
+            <Dashboard liveIncidents={liveIncidents} historyItems={historyItems} dispatchedTeams={dispatchedTeams} resolvedIncidents={resolvedIncidents} />
           </>
         );
       case "incidents":
         return <Incidents />;
       case "dispatch":
-        return <Dispatch dispatchedTeams={dispatchedTeams} setDispatchedTeams={setDispatchedTeams} />;
+        return <Dispatch dispatchedTeams={dispatchedTeams} setDispatchedTeams={setDispatchedTeams} resolvedIncidents={resolvedIncidents} setResolvedIncidents={setResolvedIncidents} />;
       case "logistics":
         return <Logistics />;
       case "settings":
@@ -137,7 +160,7 @@ function App() {
       default:
         return (
           <>
-            <Dashboard liveIncidents={liveIncidents} historyItems={historyItems} dispatchedTeams={dispatchedTeams} />
+            <Dashboard liveIncidents={liveIncidents} historyItems={historyItems} dispatchedTeams={dispatchedTeams} resolvedIncidents={resolvedIncidents} />
           </>
         );
     }
