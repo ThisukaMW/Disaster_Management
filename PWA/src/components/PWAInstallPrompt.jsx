@@ -104,8 +104,8 @@ const PWAInstallPrompt = () => {
       <div className="pwa-install-prompt">
         <div className="pwa-install-content ios-install">
           <div className="pwa-install-icon">📱</div>
-          <div className="pwa-install-text">
-            <strong>Add to Home Screen</strong>
+        <div className="pwa-install-text">
+          <strong>Install ResQ</strong>
             <p className="ios-instructions">
               <span className="ios-step">1. Tap the <strong>Share</strong> button <span className="ios-icon">⎋</span> at the bottom</span>
               <span className="ios-step">2. Scroll down and tap <strong>"Add to Home Screen"</strong></span>
@@ -129,7 +129,7 @@ const PWAInstallPrompt = () => {
       <div className="pwa-install-content">
         <div className="pwa-install-icon">📱</div>
         <div className="pwa-install-text">
-          <strong>Install Project Aegis</strong>
+          <strong>Install ResQ</strong>
           <p>Add to home screen for quick access and offline use</p>
         </div>
         <div className="pwa-install-buttons">

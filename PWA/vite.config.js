@@ -20,10 +20,10 @@ export default defineConfig({
         type: 'module'
       },
       manifest: {
-        name: 'Project Aegis - Disaster Response',
-        short_name: 'Aegis',
+        name: 'ResQ - Disaster Response',
+        short_name: 'ResQ',
         description: 'Offline-First Disaster Response System',
-        theme_color: '#667eea',
+        theme_color: '#ef4444',
         background_color: '#ffffff',
         display: 'standalone',
         orientation: 'portrait',

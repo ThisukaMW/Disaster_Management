@@ -162,3 +162,4 @@ Once you access the app on your phone:
 - Allow location permission in browser
 - For true offline GPS, test with Airplane Mode ON (WiFi OFF)
 
+

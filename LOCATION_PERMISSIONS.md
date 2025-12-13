@@ -70,3 +70,4 @@ If location still doesn't work on Mac (because Macs don't have GPS), use the **m
 4. Click "Allow" when prompted
 5. Location should work (though on Mac it will use network location, not true GPS)
 
+

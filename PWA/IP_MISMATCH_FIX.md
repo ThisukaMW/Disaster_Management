@@ -190,3 +190,4 @@ Then use the Firebase URL - it never changes! 🎉
 
 **Fix it now and offline will work!** 🚀
 
+

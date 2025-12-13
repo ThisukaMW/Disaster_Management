@@ -1,21 +1,54 @@
 .dashboard-container {
   min-height: 100vh;
-  background-color: #f3f4f6;
+  transition: background-color 0.3s;
+  display: flex;
+  flex-direction: column;
+}
+
+.light-mode .dashboard-container {
+  background: #ffffff;
+}
+
+.dark-mode .dashboard-container {
+  background: #000000;
 }
 
 .dashboard-header {
-  background: white;
   padding: 20px 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   display: flex;
   justify-content: space-between;
   align-items: center;
+  transition: background-color 0.3s, box-shadow 0.3s;
+}
+
+.light-mode .dashboard-header {
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.dark-mode .dashboard-header {
+  background: #1c1c1e;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.dashboard-title-section {
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
 .dashboard-header h1 {
   margin: 0;
-  color: #1f2937;
   font-size: 28px;
+  transition: color 0.3s;
+}
+
+.light-mode .dashboard-header h1 {
+  color: #1f2937;
+}
+
+.dark-mode .dashboard-header h1 {
+  color: #f9fafb;
 }
 
 .stats {
@@ -31,20 +64,36 @@
 
 .stat-label {
   font-size: 12px;
-  color: #6b7280;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  transition: color 0.3s;
+}
+
+.light-mode .stat-label {
+  color: #6b7280;
+}
+
+.dark-mode .stat-label {
+  color: #9ca3af;
 }
 
 .stat-value {
   font-size: 24px;
   font-weight: 700;
-  color: #1f2937;
   margin-top: 4px;
+  transition: color 0.3s;
+}
+
+.light-mode .stat-value {
+  color: #1f2937;
+}
+
+.dark-mode .stat-value {
+  color: #f9fafb;
 }
 
 .stat-value.critical {
-  color: #dc2626;
+  color: #f59e0b;
 }
 
 .dashboard-content {
@@ -54,26 +103,52 @@
 }
 
 .map-section {
-  background: white;
   margin: 20px;
   border-radius: 12px;
   overflow: hidden;
+  transition: background-color 0.3s, box-shadow 0.3s;
+}
+
+.light-mode .map-section {
+  background: #ffffff;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
+.dark-mode .map-section {
+  background: #1c1c1e;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
 .list-section {
-  background: white;
   margin: 20px 20px 20px 0;
   border-radius: 12px;
   padding: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   overflow-y: auto;
+  transition: background-color 0.3s, box-shadow 0.3s;
+}
+
+.light-mode .list-section {
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.dark-mode .list-section {
+  background: #1c1c1e;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
 }
 
 .list-section h2 {
   margin: 0 0 20px 0;
-  color: #1f2937;
   font-size: 20px;
+  transition: color 0.3s;
+}
+
+.light-mode .list-section h2 {
+  color: #1f2937;
+}
+
+.dark-mode .list-section h2 {
+  color: #f9fafb;
 }
 
 .incidents-list {
@@ -84,20 +159,37 @@
 
 .incident-item {
   padding: 16px;
-  border: 2px solid #e5e7eb;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s;
 }
 
-.incident-item:hover {
-  border-color: #667eea;
-  background-color: #f9fafb;
+.light-mode .incident-item {
+  border: 2px solid #e5e7eb;
 }
 
-.incident-item.selected {
-  border-color: #667eea;
-  background-color: #eef2ff;
+.dark-mode .incident-item {
+  border: 2px solid #374151;
+}
+
+.light-mode .incident-item:hover {
+  border-color: #3b82f6;
+  background-color: #eff6ff;
+}
+
+.dark-mode .incident-item:hover {
+  border-color: #3b82f6;
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.light-mode .incident-item.selected {
+  border-color: #3b82f6;
+  background-color: #dbeafe;
+}
+
+.dark-mode .incident-item.selected {
+  border-color: #3b82f6;
+  background-color: rgba(59, 130, 246, 0.2);
 }
 
 .incident-item-header {
@@ -109,8 +201,16 @@
 
 .incident-type {
   font-weight: 600;
-  color: #1f2937;
   font-size: 16px;
+  transition: color 0.3s;
+}
+
+.light-mode .incident-type {
+  color: #1f2937;
+}
+
+.dark-mode .incident-type {
+  color: #f9fafb;
 }
 
 .severity-badge {
@@ -122,8 +222,16 @@
 }
 
 .incident-item-details {
-  color: #4b5563;
   font-size: 14px;
+  transition: color 0.3s;
+}
+
+.light-mode .incident-item-details {
+  color: #4b5563;
+}
+
+.dark-mode .incident-item-details {
+  color: #d1d5db;
 }
 
 .detail {
@@ -144,7 +252,15 @@
 .empty-state {
   text-align: center;
   padding: 40px 20px;
+  transition: color 0.3s;
+}
+
+.light-mode .empty-state {
   color: #6b7280;
+}
+
+.dark-mode .empty-state {
+  color: #9ca3af;
 }
 
 .marker-popup {

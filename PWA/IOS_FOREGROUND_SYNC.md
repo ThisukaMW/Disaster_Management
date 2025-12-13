@@ -102,3 +102,4 @@ setupForegroundSync() {
 - **Foreground Only** - Syncs only when app is active/visible
 - **Compliant with Hackathon Rules** - Acceptable iOS workaround ✅
 
+

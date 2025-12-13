@@ -193,3 +193,4 @@ To add custom app icons:
 3. Update `manifest.json` and `vite.config.js` with icon paths
 4. Rebuild the app
 
+

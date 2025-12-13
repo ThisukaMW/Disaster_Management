@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import { subscribeToIncidents } from '../services/firebase';
+import ThemeToggle from '../components/ThemeToggle';
+import Footer from '../components/Footer';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import './Dashboard.css';
@@ -35,7 +37,7 @@ const Dashboard = () => {
 
   const getSeverityColor = (severity) => {
     const colors = {
-      1: '#dc2626',
+      1: '#c2410c',
       2: '#ea580c',
       3: '#f59e0b',
       4: '#10b981',
@@ -62,7 +64,10 @@ const Dashboard = () => {
   return (
     <div className="dashboard-container">
       <div className="dashboard-header">
-        <h1>Project Aegis - Command Dashboard</h1>
+        <div className="dashboard-title-section">
+          <h1>ResQ - Command Dashboard</h1>
+          <ThemeToggle />
+        </div>
         <div className="stats">
           <div className="stat-item">
             <span className="stat-label">Total Incidents:</span>
@@ -154,6 +159,7 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

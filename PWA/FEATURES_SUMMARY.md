@@ -123,3 +123,4 @@ Both features are implemented and ready for testing on iPhone:
 - ✅ iOS foreground sync works
 - ✅ Location is automatically requested from app
 
+

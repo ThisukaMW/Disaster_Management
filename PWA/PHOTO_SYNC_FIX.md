@@ -86,3 +86,4 @@
 
 Phone photos now compress automatically and sync successfully to Firestore! 🎉
 
+

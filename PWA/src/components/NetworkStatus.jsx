@@ -1,4 +1,4 @@
-// Network Status Indicator Component
+// Network Status Indicator Component - Crisis-Optimized
 import { useState, useEffect } from 'react';
 import { subscribeToNetworkStatus } from '../services/networkService';
 import './NetworkStatus.css';
@@ -12,9 +12,11 @@ const NetworkStatus = () => {
   }, []);
 
   return (
-    <div className={`network-status ${status.online ? 'online' : 'offline'}`}>
-      <div className="network-indicator">
-        <span className="network-dot"></span>
+    <div className={`network-status-banner ${status.online ? 'online' : 'offline'}`}>
+      <div className="network-banner-content">
+        <span className="network-icon">
+          {status.online ? '🟢' : '🔴'}
+        </span>
         <span className="network-text">
           {status.online ? 'Online' : 'Offline'}
         </span>

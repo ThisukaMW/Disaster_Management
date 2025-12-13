@@ -210,3 +210,4 @@ npm run serve:mobile
 
 Follow the steps above and your app will work perfectly in Airplane Mode! 🎉
 
+

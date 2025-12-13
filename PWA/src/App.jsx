@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { onAuthStateChange, getCachedAuth } from './services/authService';
 import { syncService } from './services/syncService';
+import { initTheme } from './services/themeService';
 import Login from './components/Login';
 import FieldResponder from './pages/FieldResponder';
 import Dashboard from './pages/Dashboard';
@@ -13,6 +14,9 @@ function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Initialize theme (default: dark mode)
+    initTheme();
+
     // Check for cached auth first (for offline mode)
     const cachedAuth = getCachedAuth();
     if (cachedAuth) {

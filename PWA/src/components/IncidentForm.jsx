@@ -20,6 +20,11 @@ const IncidentForm = () => {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
+  const [fieldErrors, setFieldErrors] = useState({
+    incidentType: '',
+    severity: '',
+    location: ''
+  });
 
   const incidentTypes = [
     { value: 'Landslide', label: 'Landslide' },
@@ -39,6 +44,25 @@ const IncidentForm = () => {
   useEffect(() => {
     updatePendingCount();
   }, []);
+
+  // Scroll to top when success message appears
+  useEffect(() => {
+    if (success) {
+      // Scroll to top of the page smoothly
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      
+      // Also scroll to success message if it exists (after a small delay to ensure it's rendered)
+      setTimeout(() => {
+        const successElement = document.getElementById('success-message');
+        if (successElement) {
+          // Scroll to show success message, accounting for fixed header (44px for network status)
+          const yOffset = -60; // Account for network status banner and header
+          const y = successElement.getBoundingClientRect().top + window.pageYOffset + yOffset;
+          window.scrollTo({ top: y, behavior: 'smooth' });
+        }
+      }, 150);
+    }
+  }, [success]);
 
 
 
@@ -128,21 +152,70 @@ const IncidentForm = () => {
     setPendingCount(pending);
   };
 
+  const validateForm = () => {
+    const errors = {
+      incidentType: '',
+      severity: '',
+      location: ''
+    };
+    let isValid = true;
+    let firstErrorField = null;
+
+    // Validate Incident Type
+    if (!formData.incidentType || formData.incidentType.trim() === '') {
+      errors.incidentType = 'Incident type is required';
+      isValid = false;
+      if (!firstErrorField) firstErrorField = 'incidentType';
+    }
+
+    // Validate Severity
+    if (!formData.severity || formData.severity.trim() === '') {
+      errors.severity = 'Severity is required';
+      isValid = false;
+      if (!firstErrorField) firstErrorField = 'severity';
+    }
+
+    // Validate Location
+    if (!location || !location.latitude || !location.longitude) {
+      errors.location = 'Location is required';
+      isValid = false;
+      if (!firstErrorField) firstErrorField = 'location';
+    }
+
+    setFieldErrors(errors);
+
+    // Scroll to first error field
+    if (!isValid && firstErrorField) {
+      // First, scroll to form container
+      const formContainer = document.getElementById('incident-form');
+      if (formContainer) {
+        formContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+      
+      // Then scroll to the specific error field
+      setTimeout(() => {
+        const errorElement = document.getElementById(firstErrorField);
+        if (errorElement) {
+          errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          errorElement.focus();
+        }
+      }, 300);
+    }
+
+    return isValid;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!location) {
-      setLocationError('Please capture location before submitting');
-      return;
-    }
-
-    if (!formData.incidentType) {
-      alert('Please select an incident type');
+    // Validate all fields
+    if (!validateForm()) {
       return;
     }
 
     setSubmitting(true);
     setSuccess(false);
+    setFieldErrors({ incidentType: '', severity: '', location: '' });
 
     try {
       const userId = getUserId();
@@ -189,13 +262,27 @@ const IncidentForm = () => {
   };
 
   return (
-    <div className="incident-form-container">
+    <div className="incident-form-container" id="incident-form">
       <div className="incident-form-card">
         <h2>Report Incident</h2>
         
         {success && (
-          <div className="success-message">
-            ✓ Incident saved {isOnline() ? 'and synced' : 'locally'} successfully!
+          <div 
+            id="success-message"
+            className={`success-message-large ${isOnline() ? 'synced' : 'saved-local'}`}
+          >
+            <div className="success-icon">✓</div>
+            <div className="success-text">
+              <strong>DATA SAVED!</strong>
+              <div className="success-detail">
+                {isOnline() 
+                  ? 'Saved and synced to server ✓' 
+                  : 'Saved locally - Will sync when online ✓'}
+              </div>
+              <div className="success-reassurance">
+                Your data is safe and secure.
+              </div>
+            </div>
           </div>
         )}
 
@@ -211,14 +298,22 @@ const IncidentForm = () => {
             <select
               id="incidentType"
               value={formData.incidentType}
-              onChange={(e) => setFormData({ ...formData, incidentType: e.target.value })}
-              required
+              onChange={(e) => {
+                setFormData({ ...formData, incidentType: e.target.value });
+                if (fieldErrors.incidentType) {
+                  setFieldErrors({ ...fieldErrors, incidentType: '' });
+                }
+              }}
+              className={fieldErrors.incidentType ? 'error-field' : ''}
             >
               <option value="">Select incident type</option>
               {incidentTypes.map(type => (
                 <option key={type.value} value={type.value}>{type.label}</option>
               ))}
             </select>
+            {fieldErrors.incidentType && (
+              <span className="field-error">{fieldErrors.incidentType}</span>
+            )}
           </div>
 
           <div className="form-group">
@@ -226,26 +321,40 @@ const IncidentForm = () => {
             <select
               id="severity"
               value={formData.severity}
-              onChange={(e) => setFormData({ ...formData, severity: e.target.value })}
-              required
+              onChange={(e) => {
+                setFormData({ ...formData, severity: e.target.value });
+                if (fieldErrors.severity) {
+                  setFieldErrors({ ...fieldErrors, severity: '' });
+                }
+              }}
+              className={fieldErrors.severity ? 'error-field' : ''}
             >
               {severityLevels.map(level => (
                 <option key={level.value} value={level.value}>{level.label}</option>
               ))}
             </select>
+            {fieldErrors.severity && (
+              <span className="field-error">{fieldErrors.severity}</span>
+            )}
           </div>
 
-          <div className="form-group">
+          <div className="form-group" id="location">
             <label>Location *</label>
             <MapLocationPicker
               initialLocation={location}
               onLocationSelect={(loc) => {
                 setLocation(loc);
                 setLocationError('');
+                if (fieldErrors.location) {
+                  setFieldErrors({ ...fieldErrors, location: '' });
+                }
               }}
               onUseGPS={async () => {
                 try {
                   const loc = await getCurrentLocation();
+                  if (fieldErrors.location) {
+                    setFieldErrors({ ...fieldErrors, location: '' });
+                  }
                   return loc;
                 } catch (error) {
                   setLocationError(error.message);
@@ -253,6 +362,9 @@ const IncidentForm = () => {
                 }
               }}
             />
+            {fieldErrors.location && (
+              <span className="field-error">{fieldErrors.location}</span>
+            )}
             {locationError && (
               <div className="error-message">{locationError}</div>
             )}
@@ -282,7 +394,7 @@ const IncidentForm = () => {
           <button
             type="submit"
             className="submit-button"
-            disabled={submitting || !location}
+            disabled={submitting}
           >
             {submitting ? 'Saving...' : 'Save Incident'}
           </button>

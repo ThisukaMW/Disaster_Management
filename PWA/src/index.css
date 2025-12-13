@@ -3,22 +3,46 @@
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Dark Mode (Default) - iOS Style: Pure Black */
+:root.dark-mode {
+  color-scheme: dark;
+  color: #f9fafb;
+  background-color: #000000;
+}
+
+body.dark-mode {
+  background-color: #000000;
+  color: #f9fafb;
+}
+
+/* Light Mode - iOS Style: Bright White */
+:root.light-mode {
+  color-scheme: light;
+  color: #1f2937;
+  background-color: #ffffff;
+}
+
+body.light-mode {
+  background-color: #ffffff;
+  color: #1f2937;
+}
+
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
   min-width: 320px;
   min-height: 100vh;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+@keyframes shine {
+  0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+  100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
 }
 
 #root {

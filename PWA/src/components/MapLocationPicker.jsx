@@ -30,10 +30,10 @@ const selectedIcon = L.divIcon({
   popupAnchor: [1, -34]
 });
 
-// Blue marker icon for user's current location (custom divIcon)
+// Neutral gray marker icon for user's current location (custom divIcon)
 const currentLocationIcon = L.divIcon({
   className: 'current-location-marker',
-  html: '<div style="background-color: #3b82f6; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
+  html: '<div style="background-color: #6b7280; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
   iconSize: [20, 20],
   iconAnchor: [10, 10]
 });
@@ -222,7 +222,7 @@ const MapLocationPicker = ({ initialLocation, onLocationSelect, onUseGPS }) => {
                       <Circle
                         center={[currentLocation.latitude, currentLocation.longitude]}
                         radius={currentLocation.accuracy}
-                        pathOptions={{ color: '#3b82f6', fillColor: '#3b82f6', fillOpacity: 0.2 }}
+                        pathOptions={{ color: '#6b7280', fillColor: '#6b7280', fillOpacity: 0.2 }}
                       />
                     )}
                   </>

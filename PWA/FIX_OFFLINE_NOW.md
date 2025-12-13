@@ -71,3 +71,4 @@ Then use the Firebase URL (never changes):
 
 **Do this now and offline will work!** 🚀
 
+

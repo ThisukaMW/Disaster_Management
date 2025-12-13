@@ -1,6 +1,6 @@
 {
-  "name": "Project Aegis - Disaster Response",
-  "short_name": "Aegis",
+  "name": "ResQ - Disaster Response",
+  "short_name": "ResQ",
   "description": "Offline-First Disaster Response System",
   "start_url": "/",
   "display": "standalone",

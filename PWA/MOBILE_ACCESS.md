@@ -198,3 +198,4 @@ firebase deploy --only hosting
 
 Follow the steps above and your PWA will be accessible on mobile with full install functionality! 🎉
 
+

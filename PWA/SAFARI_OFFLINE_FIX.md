@@ -167,3 +167,4 @@ workbox: {
 
 **This fix ensures the app loads offline even after being killed!** 🎉
 
+

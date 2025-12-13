@@ -51,7 +51,7 @@ const PendingIncidents = () => {
 
   const getSeverityColor = (severity) => {
     const colors = {
-      1: '#dc2626',
+      1: '#c2410c',
       2: '#ea580c',
       3: '#f59e0b',
       4: '#10b981',
@@ -77,7 +77,9 @@ const PendingIncidents = () => {
 
       {incidents.length === 0 ? (
         <div className="empty-state">
-          <p>No pending incidents. All reports have been synced!</p>
+          <div className="empty-icon">✓</div>
+          <p className="empty-message">All reports synced!</p>
+          <p className="empty-detail">Your data is safe on the server.</p>
         </div>
       ) : (
         <div className="incidents-list">
