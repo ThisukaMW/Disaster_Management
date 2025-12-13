@@ -28,6 +28,8 @@
   color: #c8d4ec;
   font-weight: 600;
   text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .nav-item:hover {

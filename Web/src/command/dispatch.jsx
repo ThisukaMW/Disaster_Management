@@ -44,7 +44,7 @@ const pinIcon = L.icon({
   className: "custom-pin",
 });
 
-function Dispatch() {
+function Dispatch({ dispatchedTeams = [], setDispatchedTeams }) {
   const [incidents, setIncidents] = useState([]);
   const [dispatchState, setDispatchState] = useState({});
   const [mapIncident, setMapIncident] = useState(null);
@@ -57,14 +57,61 @@ function Dispatch() {
     return () => unsubscribe();
   }, []);
 
+  // Sync dispatch state with dispatchedTeams array
+  useEffect(() => {
+    if (dispatchedTeams && dispatchedTeams.length > 0) {
+      setDispatchState((prev) => {
+        const updated = { ...prev };
+        dispatchedTeams.forEach((team) => {
+          updated[team.incidentId] = {
+            status: "Dispatched",
+            at: team.dispatchedAt,
+          };
+        });
+        return updated;
+      });
+    }
+  }, [dispatchedTeams]);
+
   const handleDispatch = (incidentId) => {
-    setDispatchState((prev) => ({
-      ...prev,
-      [incidentId]: {
-        status: "Dispatched",
-        at: new Date().toISOString(),
-      },
-    }));
+    // Find the incident being dispatched
+    const incident = incidents.find((inc) => inc.id === incidentId);
+    
+    if (incident) {
+      // Update local dispatch state
+      setDispatchState((prev) => ({
+        ...prev,
+        [incidentId]: {
+          status: "Dispatched",
+          at: new Date().toISOString(),
+        },
+      }));
+
+      // Add to dispatched teams array (if not already dispatched)
+      if (setDispatchedTeams) {
+        setDispatchedTeams((prev) => {
+          // Check if this incident is already in the array
+          const alreadyDispatched = prev.some((team) => team.incidentId === incidentId);
+          if (alreadyDispatched) {
+            return prev; // Don't add duplicates
+          }
+          
+          // Add new dispatched team object
+          return [
+            ...prev,
+            {
+              incidentId: incidentId,
+              incidentType: incident.incidentType || "Unknown",
+              severity: incident.severity,
+              latitude: incident.latitude,
+              longitude: incident.longitude,
+              dispatchedAt: new Date().toISOString(),
+              incident: incident, // Store full incident object
+            },
+          ];
+        });
+      }
+    }
   };
 
   const statusLabel = (incidentId) =>

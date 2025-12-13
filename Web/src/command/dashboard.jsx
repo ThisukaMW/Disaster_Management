@@ -1,14 +1,28 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "./dashboard.css";
 import { subscribeToIncidents } from "../firebase";
 
+function getSeverityLevel(severity) {
+  if (typeof severity === 'number') {
+    return severity; // 1=Critical, 2=High, 3=Medium, 4=Low, 5=Minimal
+  }
+  const severityMap = {
+    'critical': 1,
+    'high': 2,
+    'medium': 3,
+    'low': 4,
+    'minimal': 5
+  };
+  return severityMap[String(severity).toLowerCase()] || 3;
+}
+
 function severityClass(level) {
   if (typeof level === 'number') {
-    // Map numeric severity: 1=Critical, 2=High, 3=Medium, 4=Low
-    const severityMap = { 1: 'critical', 2: 'high', 3: 'medium', 4: 'low' };
+    // Map numeric severity: 1=Critical, 2=High, 3=Medium, 4=Low, 5=Minimal
+    const severityMap = { 1: 'critical', 2: 'high', 3: 'medium', 4: 'low', 5: 'minimal' };
     return `pill severity-${severityMap[level] || 'medium'}`;
   }
   return `pill severity-${String(level).toLowerCase()}`;
@@ -16,7 +30,7 @@ function severityClass(level) {
 
 function severityLabel(level) {
   if (typeof level === 'number') {
-    const severityMap = { 1: 'Critical', 2: 'High', 3: 'Medium', 4: 'Low' };
+    const severityMap = { 1: 'Critical', 2: 'High', 3: 'Medium', 4: 'Low', 5: 'Minimal' };
     return severityMap[level] || `Level ${level}`;
   }
   return String(level);
@@ -43,7 +57,7 @@ const pinIcon = L.icon({
   className: "custom-pin",
 });
 
-function Dashboard() {
+function Dashboard({ dispatchedTeams = [] }) {
   const [incidents, setIncidents] = useState([]);
   const [tableIncidents, setTableIncidents] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
@@ -52,6 +66,8 @@ function Dashboard() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedSeverity, setSelectedSeverity] = useState("all");
+  const [selectedIncidentType, setSelectedIncidentType] = useState("all");
   const pageSize = 10;
 
   const toMillis = (value) => {
@@ -84,21 +100,55 @@ function Dashboard() {
     return () => unsubscribe();
   }, []);
 
+  // Get unique incident types from incidents
+  const incidentTypes = useMemo(() => {
+    const types = new Set();
+    incidents.forEach((inc) => {
+      if (inc.incidentType) {
+        types.add(inc.incidentType);
+      }
+    });
+    return Array.from(types).sort();
+  }, [incidents]);
+
+  // Filter incidents based on selected filters
+  const filteredIncidents = useMemo(() => {
+    let filtered = [...incidents];
+
+    // Filter by severity
+    if (selectedSeverity !== "all") {
+      const severityMap = {
+        critical: 1,
+        high: 2,
+        medium: 3,
+        low: 4,
+        minimal: 5,
+      };
+      const targetSeverity = severityMap[selectedSeverity];
+      if (targetSeverity) {
+        filtered = filtered.filter((inc) => getSeverityLevel(inc.severity) === targetSeverity);
+      }
+    }
+
+    // Filter by incident type
+    if (selectedIncidentType !== "all") {
+      filtered = filtered.filter((inc) => inc.incidentType === selectedIncidentType);
+    }
+
+    // Sort by createdAt (newest first)
+    return filtered.sort((a, b) => toMillis(b.createdAt) - toMillis(a.createdAt));
+  }, [incidents, selectedSeverity, selectedIncidentType]);
+
+  // Update table incidents when filtered incidents change
   useEffect(() => {
-    const interval = setInterval(() => {
-      setTableIncidents((prev) => {
-        if (!prev.length) return prev;
-        const [first, ...rest] = prev;
-        return [...rest, { ...first, updated: "Just now" }];
-      });
-    }, 120_000);
-    return () => clearInterval(interval);
-  }, []);
+    setTableIncidents(filteredIncidents);
+    setPage(1);
+  }, [filteredIncidents]);
 
   useEffect(() => {
-    const maxPage = Math.max(1, Math.ceil(tableIncidents.length / pageSize));
+    const maxPage = Math.max(1, Math.ceil(filteredIncidents.length / pageSize));
     setPage((prev) => Math.min(prev, maxPage));
-  }, [tableIncidents]);
+  }, [filteredIncidents]);
 
   const formatDate = (value) => {
     if (!value) return "N/A";
@@ -140,7 +190,7 @@ function Dashboard() {
         <div className="summary-card">
           <p className="label">Teams dispatched</p>
           <p className="value">
-            {incidents.reduce((acc, i) => acc + (i.dispatched ? i.dispatched.length : 0), 0)}
+            {dispatchedTeams.length}
           </p>
           <p className="muted">Across active responses</p>
         </div>
@@ -159,6 +209,48 @@ function Dashboard() {
               <h2>Incoming reports</h2>
             </div>
             <span className="badge neutral">Auto-refresh</span>
+          </div>
+
+          {/* Filter Controls */}
+          <div className="dashboard-filters">
+            <div className="filter-group">
+              <label className="filter-label" htmlFor="severity-filter">
+                Filter by Severity:
+              </label>
+              <select
+                id="severity-filter"
+                className="filter-dropdown"
+                value={selectedSeverity}
+                onChange={(e) => setSelectedSeverity(e.target.value)}
+              >
+                <option value="all">All Severities</option>
+                <option value="critical">Critical</option>
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+                <option value="minimal">Minimal</option>
+              </select>
+            </div>
+            {incidentTypes.length > 0 && (
+              <div className="filter-group">
+                <label className="filter-label" htmlFor="type-filter">
+                  Filter by Type:
+                </label>
+                <select
+                  id="type-filter"
+                  className="filter-dropdown"
+                  value={selectedIncidentType}
+                  onChange={(e) => setSelectedIncidentType(e.target.value)}
+                >
+                  <option value="all">All Types</option>
+                  {incidentTypes.map((type) => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
 
           <div className="incidents-table" role="table" aria-label="Incoming reports">
@@ -181,12 +273,16 @@ function Dashboard() {
                 <div className="empty-state">
                   <p style={{ color: "#ff6b83" }}>Error: {error}</p>
                 </div>
-              ) : tableIncidents.length === 0 ? (
+              ) : filteredIncidents.length === 0 ? (
                 <div className="empty-state">
-                  <p>No incidents reported yet.</p>
+                  <p>
+                    {selectedSeverity !== "all" || selectedIncidentType !== "all"
+                      ? "No incidents match the selected filters."
+                      : "No incidents reported yet."}
+                  </p>
                 </div>
               ) : (
-                tableIncidents
+                filteredIncidents
                   .slice((page - 1) * pageSize, page * pageSize)
                   .map((incident) => (
                   <div
@@ -239,7 +335,7 @@ function Dashboard() {
                 ))
               )}
             </div>
-            {tableIncidents.length > 0 && (
+            {filteredIncidents.length > 0 && (
               <div className="table-footer">
                 <div className="pagination">
                   <button
@@ -250,23 +346,23 @@ function Dashboard() {
                     Prev
                   </button>
                   <span className="page-info">
-                    Page {page} of {Math.max(1, Math.ceil(tableIncidents.length / pageSize))}
+                    Page {page} of {Math.max(1, Math.ceil(filteredIncidents.length / pageSize))}
                   </span>
                   <button
                     className="page-btn"
                     onClick={() =>
                       setPage((p) =>
-                        Math.min(Math.max(1, Math.ceil(tableIncidents.length / pageSize)), p + 1)
+                        Math.min(Math.max(1, Math.ceil(filteredIncidents.length / pageSize)), p + 1)
                       )
                     }
-                    disabled={page >= Math.ceil(tableIncidents.length / pageSize)}
+                    disabled={page >= Math.ceil(filteredIncidents.length / pageSize)}
                   >
                     Next
                   </button>
                 </div>
                 <div className="rows-info">
                   Showing {(page - 1) * pageSize + 1}-
-                  {Math.min(page * pageSize, tableIncidents.length)} of {tableIncidents.length}
+                  {Math.min(page * pageSize, filteredIncidents.length)} of {filteredIncidents.length}
                 </div>
               </div>
             )}

@@ -1,9 +1,37 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import Dashboard from "./command/dashboard.jsx";
 import History from "./command/history.jsx";
+import Incidents from "./command/incidents.jsx";
+import Dispatch from "./command/dispatch.jsx";
+import Logistics from "./command/logistics.jsx";
 import "./App.css";
 
 function App() {
+  const [currentPage, setCurrentPage] = useState("dashboard");
+  
+  // Load dispatched teams from sessionStorage on mount
+  const loadDispatchedTeams = () => {
+    try {
+      const stored = sessionStorage.getItem("dispatchedTeams");
+      return stored ? JSON.parse(stored) : [];
+    } catch (error) {
+      console.error("Error loading dispatched teams from sessionStorage:", error);
+      return [];
+    }
+  };
+
+  // Shared state for dispatched teams - array of dispatched incident objects
+  const [dispatchedTeams, setDispatchedTeams] = useState(() => loadDispatchedTeams());
+
+  // Save dispatched teams to sessionStorage whenever it changes
+  useEffect(() => {
+    try {
+      sessionStorage.setItem("dispatchedTeams", JSON.stringify(dispatchedTeams));
+    } catch (error) {
+      console.error("Error saving dispatched teams to sessionStorage:", error);
+    }
+  }, [dispatchedTeams]);
+
   const incidentsSeed = useMemo(
     () => [
       {
@@ -73,16 +101,103 @@ function App() {
     { id: "INC-4997", type: "Storm Surge", result: "Evac complete", time: "Today 06:05" },
   ]);
 
+  // Page titles
+  const pageTitles = {
+    dashboard: "Command Center Dashboard",
+    incidents: "Incidents Map",
+    dispatch: "Dispatch Center",
+    logistics: "Logistics & Resources",
+    settings: "Settings",
+  };
+
+  // Render current page content
+  const renderPage = () => {
+    switch (currentPage) {
+      case "dashboard":
+        return (
+          <>
+            <Dashboard liveIncidents={liveIncidents} historyItems={historyItems} dispatchedTeams={dispatchedTeams} />
+          </>
+        );
+      case "incidents":
+        return <Incidents />;
+      case "dispatch":
+        return <Dispatch dispatchedTeams={dispatchedTeams} setDispatchedTeams={setDispatchedTeams} />;
+      case "logistics":
+        return <Logistics />;
+      case "settings":
+        return (
+          <div className="page">
+            <div className="panel">
+              <h2>Settings</h2>
+              <p className="muted">Settings page coming soon...</p>
+            </div>
+          </div>
+        );
+      default:
+        return (
+          <>
+            <Dashboard liveIncidents={liveIncidents} historyItems={historyItems} dispatchedTeams={dispatchedTeams} />
+          </>
+        );
+    }
+  };
+
   return (
     <div className="shell">
       <aside className="sidebar">
         <div className="brand">Command HQ</div>
         <nav>
-          <a className="nav-item active">Dashboard</a>
-          <a className="nav-item">Incidents</a>
-          <a className="nav-item">Dispatch</a>
-          <a className="nav-item">Logistics</a>
-          <a className="nav-item">Settings</a>
+          <a
+            className={`nav-item ${currentPage === "dashboard" ? "active" : ""}`}
+            onClick={(e) => {
+              e.preventDefault();
+              setCurrentPage("dashboard");
+            }}
+            href="#"
+          >
+            Dashboard
+          </a>
+          <a
+            className={`nav-item ${currentPage === "incidents" ? "active" : ""}`}
+            onClick={(e) => {
+              e.preventDefault();
+              setCurrentPage("incidents");
+            }}
+            href="#"
+          >
+            Incidents
+          </a>
+          <a
+            className={`nav-item ${currentPage === "dispatch" ? "active" : ""}`}
+            onClick={(e) => {
+              e.preventDefault();
+              setCurrentPage("dispatch");
+            }}
+            href="#"
+          >
+            Dispatch
+          </a>
+          <a
+            className={`nav-item ${currentPage === "logistics" ? "active" : ""}`}
+            onClick={(e) => {
+              e.preventDefault();
+              setCurrentPage("logistics");
+            }}
+            href="#"
+          >
+            Logistics
+          </a>
+          <a
+            className={`nav-item ${currentPage === "settings" ? "active" : ""}`}
+            onClick={(e) => {
+              e.preventDefault();
+              setCurrentPage("settings");
+            }}
+            href="#"
+          >
+            Settings
+          </a>
         </nav>
         <div className="sidebar-footer">Live sync enabled</div>
       </aside>
@@ -91,7 +206,7 @@ function App() {
         <div className="topbar">
           <div>
             <p className="eyebrow">National Disaster Command</p>
-            <h1>Command Center Dashboard</h1>
+            <h1>{pageTitles[currentPage] || "Command Center Dashboard"}</h1>
           </div>
           <div className="top-actions">
             <input className="search" placeholder="Search incidents" />
@@ -99,8 +214,7 @@ function App() {
           </div>
         </div>
 
-        <Dashboard liveIncidents={liveIncidents} historyItems={historyItems} />
-        <History items={historyItems} />
+        {renderPage()}
       </main>
     </div>
   );
