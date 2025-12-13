@@ -1,0 +1,131 @@
+.map-location-picker {
+  width: 100%;
+  margin: 20px 0;
+}
+
+.map-picker-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.map-picker-header h3 {
+  margin: 0;
+  color: #1f2937;
+  font-size: 18px;
+}
+
+.use-gps-button {
+  padding: 8px 16px;
+  background-color: #10b981;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.use-gps-button:hover {
+  background-color: #059669;
+}
+
+.map-container-wrapper {
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  position: relative;
+  width: 100%;
+  height: 400px;
+}
+
+.map-container-wrapper .leaflet-container {
+  height: 100%;
+  width: 100%;
+  z-index: 1;
+}
+
+.selected-location-info {
+  margin-top: 12px;
+  padding: 12px;
+  background-color: #f0fdf4;
+  border: 2px solid #86efac;
+  border-radius: 8px;
+  color: #166534;
+  font-size: 14px;
+}
+
+.selected-location-info p {
+  margin: 4px 0;
+}
+
+.map-instruction {
+  margin-top: 8px !important;
+  font-style: italic;
+  color: #059669;
+}
+
+.location-loading-message {
+  padding: 12px;
+  background-color: #dbeafe;
+  color: #1e40af;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.map-error-message {
+  padding: 16px;
+  background-color: #fee2e2;
+  color: #dc2626;
+  border: 2px solid #dc2626;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.map-error-message p {
+  margin: 4px 0;
+}
+
+.location-info-panel {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.current-location-info {
+  padding: 12px;
+  background-color: #dbeafe;
+  border: 2px solid #3b82f6;
+  border-radius: 8px;
+  color: #1e40af;
+  font-size: 14px;
+}
+
+.current-location-info p {
+  margin: 4px 0;
+}
+
+.selected-location-marker {
+  filter: hue-rotate(0deg) saturate(1.5);
+}
+
+.current-location-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Leaflet map container styles */
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+  z-index: 1;
+}
+

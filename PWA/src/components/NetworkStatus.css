@@ -1,0 +1,46 @@
+.network-status {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  z-index: 1000;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.network-status.online {
+  background-color: #10b981;
+  color: white;
+}
+
+.network-status.offline {
+  background-color: #ef4444;
+  color: white;
+  animation: pulse 2s infinite;
+}
+
+.network-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.network-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: currentColor;
+  display: inline-block;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+

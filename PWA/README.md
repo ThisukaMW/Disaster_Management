@@ -1,16 +1,81 @@
-# React + Vite
+# Project Aegis - Field Responder PWA
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Offline-First Disaster Response System for Field Responders
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- ✅ Offline-First Data Collection
+- ✅ Automatic Sync Engine
+- ✅ Persistent Offline Authentication
+- ✅ GPS Location Capture
+- ✅ Photo Capture Support
+- ✅ Pending Incidents Management
 
-## React Compiler
+## Setup Instructions
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+1. **Install Dependencies**
+   ```bash
+   npm install
+   ```
 
-## Expanding the ESLint configuration
+2. **Configure Firebase**
+   - Open `src/services/firebase.js`
+   - Replace the Firebase config object with your actual Firebase project credentials:
+     ```javascript
+     const firebaseConfig = {
+       apiKey: "YOUR_API_KEY",
+       authDomain: "YOUR_AUTH_DOMAIN",
+       projectId: "YOUR_PROJECT_ID",
+       storageBucket: "YOUR_STORAGE_BUCKET",
+       messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+       appId: "YOUR_APP_ID"
+     };
+     ```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+3. **Set up Firebase Authentication**
+   - In Firebase Console, enable Email/Password authentication
+   - Create test user accounts for responders
+
+4. **Set up Firestore Database**
+   - Create a Firestore database
+   - Set up security rules (for development, you can use test mode)
+
+5. **Run Development Server**
+   ```bash
+   npm run dev
+   ```
+
+6. **Build for Production**
+   ```bash
+   npm run build
+   ```
+
+## Testing Offline Functionality
+
+1. Open the app in your browser
+2. Log in while online
+3. Turn on Airplane Mode
+4. Fill out and submit an incident report
+5. Close and reopen the app (still offline)
+6. Verify you're still logged in and data is saved
+7. Turn off Airplane Mode
+8. Check the dashboard to see the synced data
+
+## Project Structure
+
+```
+src/
+  ├── components/        # Reusable UI components
+  ├── pages/            # Main page components
+  ├── services/         # Business logic services
+  ├── db/              # Database configuration
+  └── App.jsx          # Main app component with routing
+```
+
+## Tech Stack
+
+- React + Vite
+- Dexie.js (IndexedDB)
+- Firebase Auth & Firestore
+- Leaflet.js + OpenStreetMap
+- PWA Support
