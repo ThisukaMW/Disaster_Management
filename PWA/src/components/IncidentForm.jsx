@@ -17,13 +17,9 @@ const IncidentForm = () => {
   });
   const [location, setLocation] = useState(null);
   const [locationError, setLocationError] = useState('');
-  const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
-  const [manualEntry, setManualEntry] = useState(false);
-  const [manualCoords, setManualCoords] = useState({ lat: '', lng: '' });
-  const [useMapPicker, setUseMapPicker] = useState(false);
 
   const incidentTypes = [
     { value: 'Landslide', label: 'Landslide' },
@@ -41,83 +37,89 @@ const IncidentForm = () => {
   ];
 
   useEffect(() => {
-    // Request location permission automatically on mount
-    requestLocationPermission();
     updatePendingCount();
   }, []);
 
-  const requestLocationPermission = async () => {
-    // Check if geolocation is supported
-    if (!navigator.geolocation) {
-      setLocationError('Geolocation is not supported. Please use a mobile device.');
-      setManualEntry(true);
-      return;
-    }
 
-    // Show alert to user first
-    const userConfirmed = window.confirm(
-      'This app needs your location to report incidents. Click OK to allow location access.\n\n' +
-      'Note: For true offline GPS, please test on a mobile device.'
-    );
 
-    if (userConfirmed) {
-      // Request location permission
-      captureLocation();
-    } else {
-      setManualEntry(true);
-      setLocationError('Location access was not granted. You can enter coordinates manually.');
-    }
+  // Compress and resize image for mobile
+  const compressImage = (file, maxWidth = 800, maxHeight = 800, quality = 0.7) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          // Calculate new dimensions
+          if (width > height) {
+            if (width > maxWidth) {
+              height = (height * maxWidth) / width;
+              width = maxWidth;
+            }
+          } else {
+            if (height > maxHeight) {
+              width = (width * maxHeight) / height;
+              height = maxHeight;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Convert to base64 with compression
+          const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
+          resolve(compressedBase64);
+        };
+        img.onerror = reject;
+        img.src = e.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
   };
 
-  const captureLocation = async () => {
-    setLoading(true);
-    setLocationError('');
-    setManualEntry(false);
-    try {
-      const loc = await getCurrentLocation();
-      setLocation(loc);
-    } catch (error) {
-      setLocationError(error.message);
-      console.error('Location error:', error);
-      // Always show manual entry option on error
-      setManualEntry(true);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleManualLocation = () => {
-    const lat = parseFloat(manualCoords.lat);
-    const lng = parseFloat(manualCoords.lng);
-    
-    if (isNaN(lat) || isNaN(lng)) {
-      setLocationError('Please enter valid coordinates');
-      return;
-    }
-    
-    if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
-      setLocationError('Invalid coordinates. Lat: -90 to 90, Lng: -180 to 180');
-      return;
-    }
-    
-    setLocation({ latitude: lat, longitude: lng, accuracy: 0 });
-    setLocationError('');
-    setManualEntry(false);
-  };
-
-  const handlePhotoChange = (e) => {
+  const handlePhotoChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Convert to base64 for storage
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData({
-          ...formData,
-          photo: reader.result,
-          photoPreview: reader.result
-        });
-      };
-      reader.readAsDataURL(file);
+      // Check file size (warn if too large)
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (file.size > maxSize) {
+        alert('Image is very large. It will be compressed automatically.');
+      }
+
+      try {
+        // Compress image (especially important for phone photos)
+        const compressedPhoto = await compressImage(file);
+        
+        // Check compressed size
+        const base64Size = compressedPhoto.length;
+        const maxBase64Size = 900 * 1024; // ~900KB base64 (safe for Firestore 1MB limit)
+        
+        if (base64Size > maxBase64Size) {
+          // Compress more aggressively
+          const moreCompressed = await compressImage(file, 600, 600, 0.5);
+          setFormData({
+            ...formData,
+            photo: moreCompressed,
+            photoPreview: moreCompressed
+          });
+        } else {
+          setFormData({
+            ...formData,
+            photo: compressedPhoto,
+            photoPreview: compressedPhoto
+          });
+        }
+      } catch (error) {
+        console.error('Error compressing image:', error);
+        alert('Error processing image. Please try a different photo.');
+      }
     }
   };
 
@@ -234,141 +236,30 @@ const IncidentForm = () => {
           </div>
 
           <div className="form-group">
-            <label>GPS Location *</label>
-            {loading ? (
-              <div className="location-loading">Capturing location...</div>
-            ) : location ? (
-              <div className="location-display">
-                <div className="location-coords">
-                  <strong>Lat:</strong> {location.latitude.toFixed(6)}<br />
-                  <strong>Lng:</strong> {location.longitude.toFixed(6)}
-                </div>
-                <div className="location-actions">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setUseMapPicker(true);
-                      setLocation(null);
-                    }}
-                    className="change-location-btn"
-                  >
-                    📍 Change on Map
-                  </button>
-                  <button
-                    type="button"
-                    onClick={requestLocationPermission}
-                    className="refresh-location-btn"
-                  >
-                    🔄 Use GPS
-                  </button>
-                </div>
-              </div>
-            ) : useMapPicker ? (
-              <div>
-                <MapLocationPicker
-                  initialLocation={location}
-                  onLocationSelect={(loc) => {
-                    setLocation(loc);
-                    setUseMapPicker(false);
-                    setLocationError('');
-                  }}
-                  onUseGPS={async () => {
-                    try {
-                      const loc = await getCurrentLocation();
-                      return loc;
-                    } catch (error) {
-                      setLocationError(error.message);
-                      return null;
-                    }
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    setUseMapPicker(false);
-                    setLocation(null);
-                  }}
-                  className="back-to-options-btn"
-                >
-                  ← Back to Options
-                </button>
-              </div>
-            ) : manualEntry ? (
-              <div className="manual-location-entry">
-                <p className="manual-entry-note">
-                  GPS not available. Enter coordinates manually (for testing):
-                </p>
-                <div className="coord-inputs">
-                  <input
-                    type="number"
-                    step="any"
-                    placeholder="Latitude (e.g., 6.6828)"
-                    value={manualCoords.lat}
-                    onChange={(e) => setManualCoords({ ...manualCoords, lat: e.target.value })}
-                    className="coord-input"
-                  />
-                  <input
-                    type="number"
-                    step="any"
-                    placeholder="Longitude (e.g., 80.4012)"
-                    value={manualCoords.lng}
-                    onChange={(e) => setManualCoords({ ...manualCoords, lng: e.target.value })}
-                    className="coord-input"
-                  />
-                </div>
-                <div className="manual-entry-actions">
-                  <button
-                    type="button"
-                    onClick={handleManualLocation}
-                    className="use-manual-btn"
-                  >
-                    Use These Coordinates
-                  </button>
-                  <button
-                    type="button"
-                    onClick={requestLocationPermission}
-                    className="try-gps-btn"
-                  >
-                    Try GPS Again
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="location-options">
-                <p className="location-options-title">Choose how to set location:</p>
-                <div className="location-option-buttons">
-                  <button
-                    type="button"
-                    onClick={requestLocationPermission}
-                    className="location-option-btn"
-                  >
-                    📍 Use GPS
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setUseMapPicker(true)}
-                    className="location-option-btn map-option"
-                  >
-                    🗺️ Select on Map
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setManualEntry(true);
-                      setUseMapPicker(false);
-                    }}
-                    className="location-option-btn"
-                  >
-                    ⌨️ Enter Manually
-                  </button>
-                </div>
-                <p className="location-hint">
-                  💡 Map selection works offline! Tiles are cached for offline use.
-                </p>
-              </div>
-            )}
-            {locationError && !manualEntry && !useMapPicker && (
+            <label>Location *</label>
+            <MapLocationPicker
+              initialLocation={location}
+              onLocationSelect={(loc) => {
+                setLocation(loc);
+                setLocationError('');
+              }}
+              onUseGPS={async () => {
+                try {
+                  const loc = await getCurrentLocation();
+                  return loc;
+                } catch (error) {
+                  setLocationError(error.message);
+                  return null;
+                }
+              }}
+            />
+            {locationError && (
               <div className="error-message">{locationError}</div>
+            )}
+            {location && (
+              <div className="location-confirmation">
+                ✓ Location confirmed: {location.latitude.toFixed(6)}, {location.longitude.toFixed(6)}
+              </div>
             )}
           </div>
 

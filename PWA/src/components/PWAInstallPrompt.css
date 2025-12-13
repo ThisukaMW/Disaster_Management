@@ -31,6 +31,12 @@
   border: 2px solid #667eea;
 }
 
+.pwa-install-content.ios-install {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+}
+
 .pwa-install-icon {
   font-size: 32px;
   flex-shrink: 0;
@@ -51,6 +57,32 @@
   margin: 0;
   color: #6b7280;
   font-size: 12px;
+}
+
+.ios-instructions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.ios-step {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #4b5563;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.ios-step strong {
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.ios-icon {
+  font-size: 18px;
+  color: #667eea;
 }
 
 .pwa-install-buttons {

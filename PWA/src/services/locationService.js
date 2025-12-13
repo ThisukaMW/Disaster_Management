@@ -1,4 +1,7 @@
 // Location Service - GPS coordinates capture
+// This service automatically requests location permission from the browser
+// On mobile devices, GPS works offline (no internet required)
+// On desktop/Mac, location may require internet connection
 export const getCurrentLocation = () => {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
@@ -6,10 +9,12 @@ export const getCurrentLocation = () => {
       return;
     }
 
+    // Request location with high accuracy (uses GPS on mobile)
+    // This will automatically prompt user for location permission if not granted
     const options = {
-      enableHighAccuracy: true,
+      enableHighAccuracy: true, // Use GPS on mobile devices (works offline)
       timeout: 15000, // Increased timeout for GPS
-      maximumAge: 0
+      maximumAge: 0 // Always get fresh location
     };
 
     navigator.geolocation.getCurrentPosition(
@@ -24,7 +29,7 @@ export const getCurrentLocation = () => {
         let errorMessage = 'Failed to get location. ';
         switch(error.code) {
           case error.PERMISSION_DENIED:
-            errorMessage += 'Location permission denied. Please allow location access in your browser settings.';
+            errorMessage += 'Location permission denied. Please allow location access in your browser settings. On iPhone: Settings → Safari → Location Services → Allow.';
             break;
           case error.POSITION_UNAVAILABLE:
             errorMessage += 'Location information unavailable. On desktop/Mac, GPS requires internet. Please test on a mobile device for true offline GPS.';

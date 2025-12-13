@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview",
+    "preview": "vite preview --host 0.0.0.0",
+    "serve": "serve -s dist -l 8000",
+    "serve:mobile": "./start-mobile.sh",
     "deploy": "npm run build && firebase deploy --only hosting"
   },
   "dependencies": {

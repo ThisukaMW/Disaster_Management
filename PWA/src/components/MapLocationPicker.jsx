@@ -14,16 +14,20 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
 });
 
-// Red marker icon for selected incident location
-const selectedIcon = new L.Icon({
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+// Red marker icon for selected incident location (custom red pin)
+const selectedIcon = L.divIcon({
+  className: 'selected-location-marker',
+  html: `
+    <div style="position: relative; width: 25px; height: 41px;">
+      <svg width="25" height="41" viewBox="0 0 25 41" style="position: absolute; top: 0; left: 0;">
+        <path fill="#dc2626" stroke="#b91c1c" stroke-width="1" d="M12.5 0C5.596 0 0 5.596 0 12.5c0 8.75 12.5 28.5 12.5 28.5s12.5-19.75 12.5-28.5C25 5.596 19.404 0 12.5 0z"/>
+        <circle fill="white" cx="12.5" cy="12.5" r="4.5"/>
+      </svg>
+    </div>
+  `,
   iconSize: [25, 41],
   iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-  className: 'selected-location-marker'
+  popupAnchor: [1, -34]
 });
 
 // Blue marker icon for user's current location (custom divIcon)
@@ -61,12 +65,22 @@ function MapClickHandler({ onLocationSelect }) {
 }
 
 const MapLocationPicker = ({ initialLocation, onLocationSelect, onUseGPS }) => {
-  const [selectedLocation, setSelectedLocation] = useState(initialLocation);
+  // Set default location immediately so pin appears right away
+  const defaultLocation = initialLocation || { latitude: 6.6828, longitude: 80.4012, accuracy: 0 };
+  const [selectedLocation, setSelectedLocation] = useState(defaultLocation);
   const [currentLocation, setCurrentLocation] = useState(null);
   const [loadingLocation, setLoadingLocation] = useState(true);
-  const [mapCenter, setMapCenter] = useState([6.6828, 80.4012]); // Default: Ratnapura, Sri Lanka
+  const [mapCenter, setMapCenter] = useState([defaultLocation.latitude, defaultLocation.longitude]);
   const [mapReady, setMapReady] = useState(false);
   const [mapError, setMapError] = useState(null);
+  
+  // Notify parent of default location immediately
+  useEffect(() => {
+    if (!initialLocation) {
+      onLocationSelect(defaultLocation);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Get user's current location when map opens
   useEffect(() => {
@@ -77,16 +91,14 @@ const MapLocationPicker = ({ initialLocation, onLocationSelect, onUseGPS }) => {
         setCurrentLocation(location);
         setMapCenter([location.latitude, location.longitude]);
         
-        // If no initial location, use current location as default
+        // If no initial location, use current location as selected location
         if (!initialLocation) {
           setSelectedLocation(location);
           onLocationSelect(location);
         }
       } catch (error) {
         console.error('Failed to get current location:', error);
-        // Fallback to default location
-        setMapCenter([6.6828, 80.4012]);
-        setLoadingLocation(false);
+        // Default location is already set, so pin will still show
       } finally {
         setLoadingLocation(false);
       }
@@ -139,14 +151,14 @@ const MapLocationPicker = ({ initialLocation, onLocationSelect, onUseGPS }) => {
   return (
     <div className="map-location-picker">
       <div className="map-picker-header">
-        <h3>Select Incident Location</h3>
+        <h3>Select Location on Map</h3>
         <button
           type="button"
           onClick={handleUseGPS}
           className="use-gps-button"
           disabled={loadingLocation}
         >
-          {loadingLocation ? '📍 Getting Location...' : '📍 Center on My Location'}
+          {loadingLocation ? '📍 Getting Location...' : '📍 Use My Location'}
         </button>
       </div>
       

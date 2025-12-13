@@ -114,7 +114,21 @@
 }
 
 .selected-location-marker {
-  filter: hue-rotate(0deg) saturate(1.5);
+  filter: hue-rotate(0deg) saturate(2) brightness(0.8);
+}
+
+.selected-location-marker img {
+  filter: hue-rotate(0deg) saturate(2) brightness(0.8) !important;
+  -webkit-filter: hue-rotate(0deg) saturate(2) brightness(0.8) !important;
+}
+
+/* Make the marker red by using CSS filter */
+.leaflet-marker-icon.selected-location-marker {
+  filter: hue-rotate(0deg) saturate(2) brightness(0.8);
+}
+
+.leaflet-marker-icon.selected-location-marker img {
+  filter: hue-rotate(0deg) saturate(2) brightness(0.8) !important;
 }
 
 .current-location-marker {
