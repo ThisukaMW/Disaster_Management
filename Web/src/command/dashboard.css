@@ -270,6 +270,11 @@
   color: #4be3c5;
 }
 
+.pill.severity-low {
+  background: rgba(126, 159, 255, 0.16);
+  color: #96b3ff;
+}
+
 .map-modal {
   position: fixed;
   inset: 0;

@@ -6,7 +6,20 @@ import "./dashboard.css";
 import { subscribeToIncidents } from "../firebase";
 
 function severityClass(level) {
+  if (typeof level === 'number') {
+    // Map numeric severity: 1=Critical, 2=High, 3=Medium, 4=Low
+    const severityMap = { 1: 'critical', 2: 'high', 3: 'medium', 4: 'low' };
+    return `pill severity-${severityMap[level] || 'medium'}`;
+  }
   return `pill severity-${String(level).toLowerCase()}`;
+}
+
+function severityLabel(level) {
+  if (typeof level === 'number') {
+    const severityMap = { 1: 'Critical', 2: 'High', 3: 'Medium', 4: 'Low' };
+    return severityMap[level] || `Level ${level}`;
+  }
+  return String(level);
 }
 
 const pinSvg = encodeURIComponent(`
@@ -37,6 +50,8 @@ function Dashboard() {
   const [mapIncident, setMapIncident] = useState(null);
   const [photoIncident, setPhotoIncident] = useState(null);
   const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const pageSize = 10;
 
   const toMillis = (value) => {
@@ -49,11 +64,22 @@ function Dashboard() {
   };
 
   useEffect(() => {
+    setLoading(true);
+    setError(null);
     const unsubscribe = subscribeToIncidents((data) => {
-      const sorted = [...data].sort((a, b) => toMillis(b.createdAt) - toMillis(a.createdAt));
-      setIncidents(sorted);
-      setTableIncidents(sorted);
-      setPage(1);
+      try {
+        // Data is already sorted from the subscription, but ensure it's sorted
+        const sorted = [...data].sort((a, b) => toMillis(b.createdAt) - toMillis(a.createdAt));
+        setIncidents(sorted);
+        setTableIncidents(sorted);
+        setPage(1);
+        setLoading(false);
+        setError(null);
+      } catch (err) {
+        console.error("Error processing incidents:", err);
+        setError("Error processing incident data");
+        setLoading(false);
+      }
     });
     return () => unsubscribe();
   }, []);
@@ -76,11 +102,24 @@ function Dashboard() {
 
   const formatDate = (value) => {
     if (!value) return "N/A";
-    if (value.toDate) {
+    // Handle Firestore Timestamp
+    if (value.toDate && typeof value.toDate === 'function') {
       return value.toDate().toLocaleString();
     }
-    const parsed = new Date(value);
-    return Number.isNaN(parsed.getTime()) ? String(value) : parsed.toLocaleString();
+    // Handle Firestore Timestamp-like object with seconds
+    if (value.seconds && typeof value.seconds === 'number') {
+      return new Date(value.seconds * 1000).toLocaleString();
+    }
+    // Handle ISO string or other date formats
+    try {
+      const parsed = new Date(value);
+      if (!Number.isNaN(parsed.getTime())) {
+        return parsed.toLocaleString();
+      }
+    } catch (e) {
+      // Fall through to return string representation
+    }
+    return String(value);
   };
 
   return (
@@ -94,7 +133,7 @@ function Dashboard() {
         <div className="summary-card">
           <p className="label">Critical</p>
           <p className="value warning">
-            {incidents.filter((i) => i.severity === "Critical" || i.severity === 1).length}
+            {incidents.filter((i) => i.severity === "Critical" || i.severity === 1 || i.severity === "1").length}
           </p>
           <p className="muted">Immediate attention</p>
         </div>
@@ -124,18 +163,25 @@ function Dashboard() {
 
           <div className="incidents-table" role="table" aria-label="Incoming reports">
             <div className="table-head" role="row">
-              <span>incidentType</span>
-              <span>severity</span>
-              <span>latitude</span>
-              <span>longitude</span>
-              <span>Recieved Time</span>
+              <span>Incident Type</span>
+              <span>Severity</span>
+              <span>Latitude</span>
+              <span>Longitude</span>
+              <span>Received Time</span>
               <span>Requested Time</span>
-              <span>photo Time</span>
-              <span>map</span>
-              
+              <span>Photo</span>
+              <span>Map</span>
             </div>
             <div className="table-body">
-              {tableIncidents.length === 0 ? (
+              {loading ? (
+                <div className="empty-state">
+                  <p>Loading incidents...</p>
+                </div>
+              ) : error ? (
+                <div className="empty-state">
+                  <p style={{ color: "#ff6b83" }}>Error: {error}</p>
+                </div>
+              ) : tableIncidents.length === 0 ? (
                 <div className="empty-state">
                   <p>No incidents reported yet.</p>
                 </div>
@@ -152,7 +198,9 @@ function Dashboard() {
                     }
                   >
                     <span>{incident.incidentType || "N/A"}</span>
-                    <span className="severity-pill">{incident.severity ?? "N/A"}</span>
+                    <span className={severityClass(incident.severity)}>
+                      {severityLabel(incident.severity)}
+                    </span>
                     <span>
                       {incident.latitude != null ? Number(incident.latitude).toFixed(6) : "N/A"}
                     </span>
