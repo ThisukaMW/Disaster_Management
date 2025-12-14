@@ -48,6 +48,56 @@ export const getCurrentLocation = () => {
   });
 };
 
+// Fast location for emergency (SOS) - accepts cached location, shorter timeout
+export const getFastLocation = () => {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error('Geolocation is not supported'));
+      return;
+    }
+
+    // For emergency: accept cached location (up to 30 seconds old), shorter timeout
+    const options = {
+      enableHighAccuracy: false, // Faster, less accurate is OK for emergency
+      timeout: 3000, // Only wait 3 seconds (emergency!)
+      maximumAge: 30000 // Accept location up to 30 seconds old (much faster)
+    };
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        resolve({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracy: position.coords.accuracy
+        });
+      },
+      (error) => {
+        // For emergency, try once more with cached location
+        const fallbackOptions = {
+          enableHighAccuracy: false,
+          timeout: 2000,
+          maximumAge: 60000 // Accept up to 1 minute old location
+        };
+        
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            resolve({
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+              accuracy: position.coords.accuracy
+            });
+          },
+          (fallbackError) => {
+            reject(new Error('Could not get location quickly. SOS sent anyway.'));
+          },
+          fallbackOptions
+        );
+      },
+      options
+    );
+  });
+};
+
 // Watch location (for continuous updates)
 export const watchLocation = (callback) => {
   if (!navigator.geolocation) {

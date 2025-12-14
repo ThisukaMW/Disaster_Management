@@ -109,10 +109,20 @@ export const checkDuplicateIncident = async (incidentData) => {
 // Save incident to Firestore
 export const saveIncidentToFirestore = async (incidentData) => {
   try {
-    // Check for duplicates before saving
-    const duplicate = await checkDuplicateIncident(incidentData);
-    if (duplicate) {
-      throw new Error(`DUPLICATE: Similar incident already exists (${duplicate.distance.toFixed(2)}m away)`);
+    // Skip duplicate check for SOS/emergency incidents - they should always go through
+    const isSOS = incidentData.incidentType && 
+                   (incidentData.incidentType.includes('SOS') || 
+                    incidentData.incidentType.includes('Responder Down') ||
+                    incidentData.severity === 1);
+    
+    if (!isSOS) {
+      // Check for duplicates before saving (only for non-SOS incidents)
+      const duplicate = await checkDuplicateIncident(incidentData);
+      if (duplicate) {
+        throw new Error(`DUPLICATE: Similar incident already exists (${duplicate.distance.toFixed(2)}m away)`);
+      }
+    } else {
+      console.log('🚨 SOS/Emergency incident - skipping duplicate check (always allow)');
     }
     
     const docRef = await addDoc(collection(db, 'incidents'), {
@@ -120,9 +130,16 @@ export const saveIncidentToFirestore = async (incidentData) => {
       createdAt: serverTimestamp(),
       syncedAt: serverTimestamp()
     });
+    console.log('✅ Incident saved to Firestore:', docRef.id);
     return docRef.id;
   } catch (error) {
-    console.error('Error saving incident to Firestore:', error);
+    console.error('❌ Error saving incident to Firestore:', error);
+    console.error('Error details:', {
+      code: error.code,
+      message: error.message,
+      incidentType: incidentData.incidentType,
+      severity: incidentData.severity
+    });
     throw error;
   }
 };
