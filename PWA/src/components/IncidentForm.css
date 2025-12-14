@@ -1,13 +1,17 @@
 .incident-form-container {
   padding: 20px;
-  max-width: 600px;
+  max-width: 100%;
   margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .incident-form-card {
   border-radius: 16px;
   padding: 28px;
   transition: background-color 0.3s, box-shadow 0.3s, border-color 0.3s;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .light-mode .incident-form-card {
@@ -336,8 +340,72 @@
   border-color: #dc2626 !important;
 }
 
+.photo-input-container {
+  margin-top: 8px;
+}
+
+.photo-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  width: 100%;
+}
+
+.photo-button {
+  width: 100%;
+  height: 100px;
+  min-height: 100px;
+  padding: 16px;
+  border-radius: 16px;
+  font-size: 20px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 3px solid;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.light-mode .photo-button {
+  background-color: #ffffff;
+  border-color: #4b5563;
+  color: #1f2937;
+}
+
+.dark-mode .photo-button {
+  background-color: #1c1c1e;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+.photo-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.light-mode .photo-button:hover {
+  background-color: #f3f4f6;
+  border-color: #3b82f6;
+}
+
+.dark-mode .photo-button:hover {
+  background-color: #2c2c2e;
+  border-color: #3b82f6;
+}
+
+.photo-button:active {
+  transform: scale(0.98);
+}
+
 .photo-preview {
-  margin-top: 12px;
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .photo-preview img {
@@ -345,6 +413,25 @@
   max-height: 300px;
   border-radius: 8px;
   border: 2px solid #e5e7eb;
+  object-fit: contain;
+}
+
+.remove-photo-btn {
+  padding: 12px 20px;
+  background-color: #4b5563;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+}
+
+.remove-photo-btn:hover {
+  background-color: #374151;
+  transform: translateY(-1px);
 }
 
 .location-confirmation {
@@ -395,5 +482,149 @@
   cursor: not-allowed;
   background: #9ca3af;
   border-color: #6b7280;
+}
+
+/* Large Button Selection Groups - 2x2 Grid Layout */
+.button-selection-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 8px;
+  width: 100%;
+}
+
+.selection-button {
+  width: 100%;
+  height: 100px; /* Fixed height - all buttons same size */
+  min-height: 100px;
+  padding: 16px 12px;
+  border-radius: 16px;
+  font-size: 20px; /* Slightly smaller to fit in fixed height */
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 3px solid;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.3;
+}
+
+.light-mode .selection-button {
+  background-color: #ffffff;
+  border-color: #4b5563;
+  color: #1f2937;
+}
+
+.dark-mode .selection-button {
+  background-color: #1c1c1e;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+.selection-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.light-mode .selection-button:hover {
+  background-color: #f3f4f6;
+  border-color: #3b82f6;
+}
+
+.dark-mode .selection-button:hover {
+  background-color: #2c2c2e;
+  border-color: #3b82f6;
+}
+
+.selection-button:active {
+  transform: scale(0.98);
+}
+
+.selection-button.selected {
+  background-color: #3b82f6;
+  border-color: #2563eb;
+  color: white;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+.selection-button.selected:hover {
+  background-color: #2563eb;
+  border-color: #1d4ed8;
+}
+
+/* Selected Option Display - Full Width */
+.selected-option-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 100px; /* Fixed height - same as buttons */
+  min-height: 100px;
+  padding: 24px 28px;
+  border-radius: 16px;
+  border: 3px solid;
+  margin-top: 8px;
+  transition: all 0.2s;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.light-mode .selected-option-display {
+  background-color: #eff6ff;
+  border-color: #3b82f6;
+  color: #1f2937;
+}
+
+.dark-mode .selected-option-display {
+  background-color: rgba(59, 130, 246, 0.1);
+  border-color: #3b82f6;
+  color: #f9fafb;
+}
+
+.selected-option-text {
+  font-size: 24px;
+  font-weight: 700;
+  flex: 1;
+}
+
+.clear-selection-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 3px solid;
+  background: transparent;
+  font-size: 24px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  min-width: 48px;
+}
+
+.light-mode .clear-selection-btn {
+  border-color: #3b82f6;
+  color: #3b82f6;
+}
+
+.dark-mode .clear-selection-btn {
+  border-color: #60a5fa;
+  color: #60a5fa;
+}
+
+.clear-selection-btn:hover {
+  background-color: #3b82f6;
+  color: white;
+  transform: scale(1.1);
+}
+
+.clear-selection-btn:active {
+  transform: scale(0.95);
 }
 

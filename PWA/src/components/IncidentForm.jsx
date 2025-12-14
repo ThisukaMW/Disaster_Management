@@ -11,7 +11,7 @@ import './IncidentForm.css';
 const IncidentForm = () => {
   const [formData, setFormData] = useState({
     incidentType: '',
-    severity: '3',
+    severity: '',
     photo: null,
     photoPreview: null
   });
@@ -244,7 +244,7 @@ const IncidentForm = () => {
       // Reset form
       setFormData({
         incidentType: '',
-        severity: '3',
+        severity: '',
         photo: null,
         photoPreview: null
       });
@@ -295,22 +295,41 @@ const IncidentForm = () => {
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label htmlFor="incidentType">Incident Type *</label>
-            <select
-              id="incidentType"
-              value={formData.incidentType}
-              onChange={(e) => {
-                setFormData({ ...formData, incidentType: e.target.value });
-                if (fieldErrors.incidentType) {
-                  setFieldErrors({ ...fieldErrors, incidentType: '' });
-                }
-              }}
-              className={fieldErrors.incidentType ? 'error-field' : ''}
-            >
-              <option value="">Select incident type</option>
-              {incidentTypes.map(type => (
-                <option key={type.value} value={type.value}>{type.label}</option>
-              ))}
-            </select>
+            {formData.incidentType ? (
+              <div className="selected-option-display">
+                <span className="selected-option-text">{incidentTypes.find(t => t.value === formData.incidentType)?.label}</span>
+                <button
+                  type="button"
+                  className="clear-selection-btn"
+                  onClick={() => {
+                    setFormData({ ...formData, incidentType: '' });
+                    if (fieldErrors.incidentType) {
+                      setFieldErrors({ ...fieldErrors, incidentType: '' });
+                    }
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+            ) : (
+              <div className="button-selection-group">
+                {incidentTypes.map(type => (
+                  <button
+                    key={type.value}
+                    type="button"
+                    className="selection-button"
+                    onClick={() => {
+                      setFormData({ ...formData, incidentType: type.value });
+                      if (fieldErrors.incidentType) {
+                        setFieldErrors({ ...fieldErrors, incidentType: '' });
+                      }
+                    }}
+                  >
+                    {type.label}
+                  </button>
+                ))}
+              </div>
+            )}
             {fieldErrors.incidentType && (
               <span className="field-error">{fieldErrors.incidentType}</span>
             )}
@@ -318,21 +337,41 @@ const IncidentForm = () => {
 
           <div className="form-group">
             <label htmlFor="severity">Severity *</label>
-            <select
-              id="severity"
-              value={formData.severity}
-              onChange={(e) => {
-                setFormData({ ...formData, severity: e.target.value });
-                if (fieldErrors.severity) {
-                  setFieldErrors({ ...fieldErrors, severity: '' });
-                }
-              }}
-              className={fieldErrors.severity ? 'error-field' : ''}
-            >
-              {severityLevels.map(level => (
-                <option key={level.value} value={level.value}>{level.label}</option>
-              ))}
-            </select>
+            {formData.severity ? (
+              <div className="selected-option-display">
+                <span className="selected-option-text">{severityLevels.find(s => s.value === formData.severity)?.label}</span>
+                <button
+                  type="button"
+                  className="clear-selection-btn"
+                  onClick={() => {
+                    setFormData({ ...formData, severity: '' });
+                    if (fieldErrors.severity) {
+                      setFieldErrors({ ...fieldErrors, severity: '' });
+                    }
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+            ) : (
+              <div className="button-selection-group">
+                {severityLevels.map(level => (
+                  <button
+                    key={level.value}
+                    type="button"
+                    className="selection-button"
+                    onClick={() => {
+                      setFormData({ ...formData, severity: level.value });
+                      if (fieldErrors.severity) {
+                        setFieldErrors({ ...fieldErrors, severity: '' });
+                      }
+                    }}
+                  >
+                    {level.label}
+                  </button>
+                ))}
+              </div>
+            )}
             {fieldErrors.severity && (
               <span className="field-error">{fieldErrors.severity}</span>
             )}
@@ -377,16 +416,64 @@ const IncidentForm = () => {
 
           <div className="form-group">
             <label htmlFor="photo">Photo (Optional)</label>
-            <input
-              type="file"
-              id="photo"
-              accept="image/*"
-              capture="environment"
-              onChange={handlePhotoChange}
-            />
+            <div className="photo-input-container">
+              <input
+                type="file"
+                id="photo"
+                accept="image/*"
+                onChange={handlePhotoChange}
+                style={{ display: 'none' }}
+              />
+              <input
+                type="file"
+                id="photo-camera"
+                accept="image/*"
+                capture="environment"
+                onChange={handlePhotoChange}
+                style={{ display: 'none' }}
+              />
+              <div className="photo-buttons">
+                <button
+                  type="button"
+                  className="photo-button capture-button"
+                  onClick={() => {
+                    // Trigger camera capture
+                    document.getElementById('photo-camera').click();
+                  }}
+                >
+                  📷 Take Photo
+                </button>
+                <button
+                  type="button"
+                  className="photo-button choose-button"
+                  onClick={() => {
+                    // Trigger file picker (choose existing photo)
+                    document.getElementById('photo').click();
+                  }}
+                >
+                  📁 Choose File
+                </button>
+              </div>
+            </div>
             {formData.photoPreview && (
               <div className="photo-preview">
                 <img src={formData.photoPreview} alt="Preview" />
+                <button
+                  type="button"
+                  className="remove-photo-btn"
+                  onClick={() => {
+                    setFormData({
+                      ...formData,
+                      photo: null,
+                      photoPreview: null
+                    });
+                    // Reset file inputs
+                    document.getElementById('photo').value = '';
+                    document.getElementById('photo-camera').value = '';
+                  }}
+                >
+                  Remove Photo
+                </button>
               </div>
             )}
           </div>

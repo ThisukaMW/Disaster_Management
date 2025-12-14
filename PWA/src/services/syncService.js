@@ -93,9 +93,22 @@ class SyncService {
 
       for (const incident of pendingIncidents) {
         try {
-          // Remove local id, synced flag, and createdAt before sending
+          // Check retry limit (max 5 retries)
+          const retryCount = incident.retryCount || 0;
+          const maxRetries = 5;
+          
+          if (retryCount >= maxRetries) {
+            console.error(`❌ Incident ${incident.id} exceeded max retries (${maxRetries}). Marking as failed.`);
+            await db.incidents.update(incident.id, { 
+              synced: -1, // -1 = failed permanently
+              retryCount: retryCount
+            });
+            continue; // Skip this incident
+          }
+          
+          // Remove local id, synced flag, createdAt, retryCount before sending
           // Firestore will add its own serverTimestamp
-          const { id, synced, createdAt, ...incidentData } = incident;
+          const { id, synced, createdAt, retryCount: _, lastRetryAt: __, ...incidentData } = incident;
           
           // Check photo size before syncing (Firestore has 1MB limit per field)
           if (incidentData.photo) {
@@ -109,30 +122,86 @@ class SyncService {
             }
           }
           
-          // POST to Server (Firestore)
-          console.log(`📤 [FOREGROUND SYNC] POSTing incident ${incident.id} to Firestore...`);
+          // POST to Server (Firestore) with duplicate check
+          console.log(`📤 [FOREGROUND SYNC] POSTing incident ${incident.id} to Firestore... (attempt ${retryCount + 1}/${maxRetries})`);
           await saveIncidentToFirestore(incidentData);
           
           // Mark as Synced
-          await db.incidents.update(incident.id, { synced: 1 });
+          await db.incidents.update(incident.id, { 
+            synced: 1,
+            retryCount: 0, // Reset retry count on success
+            lastRetryAt: null
+          });
           console.log(`✅ [FOREGROUND SYNC] Incident ${incident.id} synced successfully - marked as synced`);
         } catch (error) {
-          console.error(`Failed to sync incident ${incident.id}:`, error);
+          console.error(`❌ Failed to sync incident ${incident.id}:`, error);
+          
+          // Handle duplicate error - mark as synced (duplicate already exists on server)
+          if (error.message && error.message.includes('DUPLICATE')) {
+            console.log(`⚠️ Duplicate detected for incident ${incident.id}. Marking as synced (duplicate exists on server).`);
+            await db.incidents.update(incident.id, { 
+              synced: 1, // Mark as synced (duplicate exists)
+              retryCount: 0
+            });
+            continue;
+          }
           
           // Check if error is due to document size
           if (error.message && error.message.includes('size')) {
             console.error('Document too large. Attempting to sync without photo...');
             try {
               // Try syncing without photo
-              const { id, synced, createdAt, photo, ...incidentDataWithoutPhoto } = incident;
+              const { id, synced, createdAt, photo, retryCount: _, lastRetryAt: __, ...incidentDataWithoutPhoto } = incident;
               await saveIncidentToFirestore(incidentDataWithoutPhoto);
-              await db.incidents.update(incident.id, { synced: 1 });
-              console.log(`Synced incident ${incident.id} without photo`);
+              await db.incidents.update(incident.id, { 
+                synced: 1,
+                retryCount: 0
+              });
+              console.log(`✅ Synced incident ${incident.id} without photo`);
+              continue; // Success, move to next incident
             } catch (retryError) {
-              console.error(`Still failed to sync incident ${incident.id}:`, retryError);
+              console.error(`❌ Still failed to sync incident ${incident.id}:`, retryError);
+              // Fall through to retry logic below
             }
           }
-          // Will retry on next sync
+          
+          // Increment retry count and update last retry time
+          const newRetryCount = (incident.retryCount || 0) + 1;
+          const lastRetryAt = Date.now();
+          
+          await db.incidents.update(incident.id, { 
+            retryCount: newRetryCount,
+            lastRetryAt: lastRetryAt
+          });
+          
+          // Calculate exponential backoff delay (1s, 2s, 4s, 8s, 16s)
+          const backoffDelay = Math.min(1000 * Math.pow(2, newRetryCount - 1), 16000);
+          console.log(`⏳ Incident ${incident.id} will retry in ${backoffDelay}ms (retry ${newRetryCount}/${maxRetries})`);
+          
+          // Wait before retrying (exponential backoff)
+          if (newRetryCount < maxRetries) {
+            await new Promise(resolve => setTimeout(resolve, backoffDelay));
+            // Retry immediately after backoff
+            try {
+              const { id, synced, createdAt, retryCount: __, lastRetryAt: ___, ...incidentData } = incident;
+              if (incidentData.photo) {
+                const photoSize = incidentData.photo.length;
+                const maxSize = 900 * 1024;
+                if (photoSize > maxSize) {
+                  incidentData.photo = null;
+                }
+              }
+              await saveIncidentToFirestore(incidentData);
+              await db.incidents.update(incident.id, { 
+                synced: 1,
+                retryCount: 0
+              });
+              console.log(`✅ [RETRY SUCCESS] Incident ${incident.id} synced after retry`);
+            } catch (retryError) {
+              console.error(`❌ [RETRY FAILED] Incident ${incident.id} failed again:`, retryError);
+              // Will be retried on next sync cycle
+            }
+          }
         }
       }
     } catch (error) {

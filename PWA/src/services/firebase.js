@@ -1,7 +1,7 @@
 // Firebase Service
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore, collection, addDoc, query, onSnapshot, orderBy, serverTimestamp } from 'firebase/firestore';
+import { getFirestore, collection, addDoc, query, onSnapshot, orderBy, serverTimestamp, where, getDocs, limit } from 'firebase/firestore';
 
 // Firebase Configuration - Replace with your actual config
 // const firebaseConfig = {
@@ -26,9 +26,95 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
+// Calculate distance between two coordinates using Haversine formula (in meters)
+export const calculateDistance = (lat1, lon1, lat2, lon2) => {
+  const R = 6371000; // Earth's radius in meters
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c; // Distance in meters
+};
+
+// Check for duplicate incidents (same user, same type, within 10 meters)
+export const checkDuplicateIncident = async (incidentData) => {
+  try {
+    const { userId, incidentType, latitude, longitude } = incidentData;
+    
+    if (!userId || !incidentType || !latitude || !longitude) {
+      return null; // Can't check duplicates without required fields
+    }
+    
+    // Query Firestore for incidents with same user and type
+    // Note: This requires a Firestore composite index on (userId, incidentType, createdAt)
+    // Firebase will auto-create it on first use, or you can create it manually
+    const incidentsRef = collection(db, 'incidents');
+    
+    let querySnapshot;
+    try {
+      const q = query(
+        incidentsRef,
+        where('userId', '==', userId),
+        where('incidentType', '==', incidentType),
+        orderBy('createdAt', 'desc'),
+        limit(50) // Check last 50 incidents (reasonable limit)
+      );
+      querySnapshot = await getDocs(q);
+    } catch (indexError) {
+      // If index doesn't exist, fall back to simpler query
+      console.warn('Composite index not found. Using simpler query for duplicate check.');
+      const q = query(
+        incidentsRef,
+        where('userId', '==', userId),
+        where('incidentType', '==', incidentType),
+        limit(50)
+      );
+      querySnapshot = await getDocs(q);
+    }
+    
+    // Check each incident for proximity (within 10 meters)
+    for (const doc of querySnapshot.docs) {
+      const existingIncident = doc.data();
+      if (existingIncident.latitude && existingIncident.longitude) {
+        const distance = calculateDistance(
+          latitude,
+          longitude,
+          existingIncident.latitude,
+          existingIncident.longitude
+        );
+        
+        if (distance <= 10) { // Within 10 meters
+          console.log(`⚠️ Duplicate incident detected: ${doc.id} (${distance.toFixed(2)}m away)`);
+          return {
+            id: doc.id,
+            distance: distance,
+            existingIncident: existingIncident
+          };
+        }
+      }
+    }
+    
+    return null; // No duplicate found
+  } catch (error) {
+    console.error('Error checking for duplicate incident:', error);
+    // If error checking duplicates, allow sync to proceed (fail open)
+    // This ensures sync doesn't fail due to duplicate check errors
+    return null;
+  }
+};
+
 // Save incident to Firestore
 export const saveIncidentToFirestore = async (incidentData) => {
   try {
+    // Check for duplicates before saving
+    const duplicate = await checkDuplicateIncident(incidentData);
+    if (duplicate) {
+      throw new Error(`DUPLICATE: Similar incident already exists (${duplicate.distance.toFixed(2)}m away)`);
+    }
+    
     const docRef = await addDoc(collection(db, 'incidents'), {
       ...incidentData,
       createdAt: serverTimestamp(),

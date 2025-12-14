@@ -25,9 +25,9 @@ function App() {
     }
 
     // Subscribe to auth state changes
-    const unsubscribe = onAuthStateChange((firebaseUser) => {
-      if (firebaseUser) {
-        setUser(firebaseUser);
+    const unsubscribe = onAuthStateChange((user) => {
+      if (user) {
+        setUser(user);
       } else {
         // Only clear user if we're online and there's no cache
         if (navigator.onLine && !getCachedAuth()) {
@@ -48,7 +48,11 @@ function App() {
   }, []);
 
   const handleLoginSuccess = () => {
-    // User will be set via auth state change
+    // Refresh user state after login
+    const cachedAuth = getCachedAuth();
+    if (cachedAuth) {
+      setUser({ uid: cachedAuth.uid, email: cachedAuth.email });
+    }
   };
 
   if (loading) {
