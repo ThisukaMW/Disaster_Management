@@ -6,6 +6,7 @@ import Dispatch from "./command/dispatch.jsx";
 import Logistics from "./command/logistics.jsx";
 import ResponderManagement from "./command/responder-management.jsx";
 import Analytics from "./command/analytics.jsx";
+import { createSOSIncident } from "./firebase";
 import "./App.css";
 
 function App() {
@@ -125,6 +126,20 @@ function App() {
     { id: "INC-4995", type: "Landslide", result: "Cleared", time: "Today 06:50" },
     { id: "INC-4997", type: "Storm Surge", result: "Evac complete", time: "Today 06:05" },
   ]);
+
+  // Handle SOS button click
+  const handleSOS = async () => {
+    if (!window.confirm("🚨 Send Emergency SOS Alert?\n\nThis will create a CRITICAL incident immediately.")) {
+      return;
+    }
+
+    try {
+      await createSOSIncident();
+      alert("✓ SOS Alert sent successfully!\n\nEmergency response teams have been notified.");
+    } catch (error) {
+      alert(`✗ Failed to send SOS: ${error.message}`);
+    }
+  };
 
   // Page titles
   const pageTitles = {
@@ -261,6 +276,9 @@ function App() {
           </div>
           <div className="top-actions">
             <input className="search" placeholder="Search incidents" />
+            <button className="sos-button" onClick={handleSOS} title="Send Emergency SOS Alert">
+              🚨 SOS
+            </button>
             <div className="avatar">RQ</div>
           </div>
         </div>

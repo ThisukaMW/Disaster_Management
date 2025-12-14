@@ -224,6 +224,58 @@ export const updateResponder = async (id, data) => {
   await updateDoc(ref, { ...data, updatedAt: serverTimestamp() });
 };
 
+// Create SOS emergency incident
+export const createSOSIncident = async (location = null, incidentType = "Emergency SOS") => {
+  try {
+    let latitude, longitude, locationText;
+    
+    // Get current location if not provided
+    if (!location) {
+      try {
+        const position = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+          });
+        });
+        latitude = position.coords.latitude;
+        longitude = position.coords.longitude;
+        locationText = `${latitude.toFixed(6)}°N, ${longitude.toFixed(6)}°E`;
+      } catch (geoError) {
+        // Default to center of Sri Lanka if geolocation fails
+        latitude = 7.8731;
+        longitude = 80.7718;
+        locationText = "Sri Lanka (Default) | 7.8731°N, 80.7718°E";
+      }
+    } else {
+      latitude = location.latitude;
+      longitude = location.longitude;
+      locationText = location.location || `${latitude.toFixed(6)}°N, ${longitude.toFixed(6)}°E`;
+    }
+
+    // Create critical SOS incident
+    const sosIncident = {
+      incidentType: incidentType,
+      severity: 1, // Critical
+      status: "Emergency SOS Alert",
+      latitude: latitude,
+      longitude: longitude,
+      location: locationText,
+      createdAt: serverTimestamp(),
+      timestamp: serverTimestamp(),
+      userId: auth.currentUser?.uid || "command-center",
+    };
+
+    const docRef = await addDoc(collection(db, "incidents"), sosIncident);
+    console.log("✓ SOS incident created successfully! ID:", docRef.id);
+    return { success: true, id: docRef.id };
+  } catch (error) {
+    console.error("✗ Error creating SOS incident:", error);
+    throw new Error(error.message || "Failed to send SOS alert. Please try again.");
+  }
+};
+
 // Helper function to test authentication (for debugging)
 export const testResponderLogin = async (email, password) => {
   try {
