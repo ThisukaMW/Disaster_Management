@@ -5,6 +5,7 @@ import Incidents from "./command/incidents.jsx";
 import Dispatch from "./command/dispatch.jsx";
 import Logistics from "./command/logistics.jsx";
 import ResponderManagement from "./command/responder-management.jsx";
+import Analytics from "./command/analytics.jsx";
 import "./App.css";
 
 function App() {
@@ -132,7 +133,8 @@ function App() {
     dispatch: "Dispatch Center",
     logistics: "Logistics & Resources",
     "responder-management": "Responder Management",
-    settings: "Settings",
+    analytics: "Analytics",
+    // settings: "Settings",
   };
 
   // Render current page content
@@ -152,15 +154,17 @@ function App() {
         return <Logistics />;
       case "responder-management":
         return <ResponderManagement />;
-      case "settings":
-        return (
-          <div className="page">
-            <div className="panel">
-              <h2>Settings</h2>
-              <p className="muted">Settings page coming soon...</p>
-            </div>
-          </div>
-        );
+      case "analytics":
+        return <Analytics />;
+      // case "settings":
+      //   return (
+      //     <div className="page">
+      //       <div className="panel">
+      //         <h2>Settings</h2>
+      //         <p className="muted">Settings page coming soon...</p>
+      //       </div>
+      //     </div>
+      //   );
       default:
         return (
           <>
@@ -173,7 +177,7 @@ function App() {
   return (
     <div className="shell">
       <aside className="sidebar">
-        <div className="brand">Command HQ</div>
+        <div className="brand">ResQ</div>
         <nav>
           <a
             className={`nav-item ${currentPage === "dashboard" ? "active" : ""}`}
@@ -205,7 +209,7 @@ function App() {
           >
             Dispatch
           </a>
-          <a
+          {/* <a
             className={`nav-item ${currentPage === "logistics" ? "active" : ""}`}
             onClick={(e) => {
               e.preventDefault();
@@ -214,7 +218,7 @@ function App() {
             href="#"
           >
             Logistics
-          </a>
+          </a> */}
           <a
             className={`nav-item ${currentPage === "responder-management" ? "active" : ""}`}
             onClick={(e) => {
@@ -226,6 +230,16 @@ function App() {
             Responder Management
           </a>
           <a
+            className={`nav-item ${currentPage === "analytics" ? "active" : ""}`}
+            onClick={(e) => {
+              e.preventDefault();
+              setCurrentPage("analytics");
+            }}
+            href="#"
+          >
+            Analytics
+          </a>
+          {/* <a
             className={`nav-item ${currentPage === "settings" ? "active" : ""}`}
             onClick={(e) => {
               e.preventDefault();
@@ -234,7 +248,7 @@ function App() {
             href="#"
           >
             Settings
-          </a>
+          </a> */}
         </nav>
         <div className="sidebar-footer">Live sync enabled</div>
       </aside>
@@ -247,7 +261,7 @@ function App() {
           </div>
           <div className="top-actions">
             <input className="search" placeholder="Search incidents" />
-            <div className="avatar">HQ</div>
+            <div className="avatar">RQ</div>
           </div>
         </div>
 

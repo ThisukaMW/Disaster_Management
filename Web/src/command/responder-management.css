@@ -52,6 +52,37 @@
   border: 1px solid rgba(255, 92, 115, 0.25);
 }
 
+.form-message.error.warning-message-box {
+  background: rgba(255, 152, 0, 0.12);
+  color: #ff9800;
+  border: 1px solid rgba(255, 152, 0, 0.3);
+}
+
+.error-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.error-text {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.error-details {
+  margin: 0;
+  padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: #ffb366;
+}
+
 .form-message.success {
   background: rgba(75, 227, 197, 0.12);
   color: #4be3c5;

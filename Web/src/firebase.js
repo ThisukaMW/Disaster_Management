@@ -3,20 +3,33 @@ import {
   addDoc,
   collection,
   doc,
+  getDocs,
   onSnapshot,
   orderBy,
   query,
   serverTimestamp,
   setDoc,
   updateDoc,
+  where,
 } from "firebase/firestore";
 import { initializeApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "firebase/auth";
-// Reuse the shared Firebase app/db from the backend config
-import backendApp, { db as backendDb } from "../../Backend/firebase.config.js";
+import { getFirestore } from "firebase/firestore";
 
-const app = backendApp;
-const db = backendDb;
+// Firebase Configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyDG2LDu5cqN-OHTIcm_bZwcYYHZILiGj9M",
+  authDomain: "disaster-management-app-3b9ce.firebaseapp.com",
+  projectId: "disaster-management-app-3b9ce",
+  storageBucket: "disaster-management-app-3b9ce.firebasestorage.app",
+  messagingSenderId: "1066130120084",
+  appId: "1:1066130120084:web:72db0d847c72e20de98381",
+  measurementId: "G-BR2F8VCW4Z"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 const auth = getAuth(app);
 
 // Secondary app to create responder users without affecting current session
@@ -81,29 +94,66 @@ export const subscribeToResponders = (callback) => {
   });
 };
 
+// Check if email already exists in responders collection
+export const checkEmailExists = async (email) => {
+  try {
+    const q = query(collection(db, "responders"), where("email", "==", email.trim().toLowerCase()));
+    const querySnapshot = await getDocs(q);
+    
+    if (!querySnapshot.empty) {
+      const existingResponder = querySnapshot.docs[0];
+      return {
+        exists: true,
+        uid: existingResponder.id,
+        data: { id: existingResponder.id, ...existingResponder.data() }
+      };
+    }
+    
+    return { exists: false };
+  } catch (error) {
+    console.error("Error checking email existence:", error);
+    // If query fails, return unknown (will try creation anyway)
+    return { exists: false, error: error.message };
+  }
+};
+
 export const createResponderAccount = async ({ email, password, name, phone }) => {
+  // Normalize email to lowercase for consistent checking
+  const emailLower = email.trim().toLowerCase();
+  
   try {
     // Validate password before proceeding
     if (!password || password.length < 6) {
       throw new Error("Password must be at least 6 characters long");
     }
     
-    console.log("Creating Firebase Auth user with email:", email, "Password length:", password.length);
+    console.log("Creating Firebase Auth user with email:", emailLower, "Password length:", password.length);
+    
+    // Check if email already exists in Firestore responders collection
+    const emailCheck = await checkEmailExists(emailLower);
+    if (emailCheck.exists) {
+      const errorMessage = `⚠️ WARNING: This user has already been added to the system!\n\n` +
+        `Email: ${emailLower}\n` +
+        `UID: ${emailCheck.uid}\n` +
+        `Name: ${emailCheck.data?.name || "N/A"}\n\n` +
+        `Please use a different email address or check the existing responder in the list.`;
+      throw new Error(errorMessage);
+    }
     
     // Create Firebase Auth user with email and password
     // Email and password are stored securely in Firebase Authentication (password is hashed)
-    const cred = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+    const cred = await createUserWithEmailAndPassword(secondaryAuth, emailLower, password);
     const uid = cred.user.uid;
     
     console.log("✓ Firebase Auth user created successfully!");
     console.log("  - UID:", uid);
-    console.log("  - Email:", email);
+    console.log("  - Email:", emailLower);
     console.log("  - Email verified:", cred.user.emailVerified);
     
     // Verify the account works by testing sign-in (then sign out immediately)
     try {
       await signOut(secondaryAuth);
-      const testSignIn = await signInWithEmailAndPassword(secondaryAuth, email, password);
+      const testSignIn = await signInWithEmailAndPassword(secondaryAuth, emailLower, password);
       console.log("✓ Password verification successful - account can be authenticated");
       await signOut(secondaryAuth);
     } catch (verifyError) {
@@ -113,8 +163,9 @@ export const createResponderAccount = async ({ email, password, name, phone }) =
     
     // Store responder data in Firestore "responders" collection
     // Password is stored as plain string in Firestore as requested
+    // Store email in lowercase for consistent querying
     await setDoc(doc(db, "responders", uid), {
-      email,
+      email: emailLower,
       password: password, // Store password as string in Firestore
       name: name || "",
       phone: phone || "",
@@ -133,9 +184,29 @@ export const createResponderAccount = async ({ email, password, name, phone }) =
     console.error("  - Error code:", error.code);
     console.error("  - Error message:", error.message);
     
-    // Re-throw with more context
+    // If error already has a custom message (from email check), re-throw it
+    if (error.message.includes("WARNING: This user has already been added")) {
+      throw error;
+    }
+    
+    // Re-throw with more context for Firebase Auth errors
     if (error.code === 'auth/email-already-in-use') {
-      throw new Error("This email is already registered. Please use a different email.");
+      // Try to get UID from Firestore if available (emailLower is in outer scope)
+      try {
+        const emailCheck = await checkEmailExists(emailLower);
+        if (emailCheck.exists) {
+          throw new Error(`⚠️ WARNING: This user has already been added to the system!\n\n` +
+            `Email: ${emailLower}\n` +
+            `UID: ${emailCheck.uid}\n` +
+            `Name: ${emailCheck.data?.name || "N/A"}\n\n` +
+            `This email is already registered in Firebase Authentication. Please use a different email address.`);
+        } else {
+          throw new Error("⚠️ WARNING: This email is already registered in Firebase Authentication.\n\nPlease use a different email address or check if the user already exists.");
+        }
+      } catch (checkError) {
+        // If check fails, show generic message
+        throw new Error("⚠️ WARNING: This email is already registered in Firebase Authentication.\n\nPlease use a different email address or check if the user already exists.");
+      }
     } else if (error.code === 'auth/weak-password') {
       throw new Error("Password is too weak. Please use a stronger password (minimum 6 characters).");
     } else if (error.code === 'auth/invalid-email') {

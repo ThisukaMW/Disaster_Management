@@ -106,12 +106,17 @@ function ResponderManagement() {
 
           <form onSubmit={handleSubmit} className="responder-form">
             {error && (
-              <div className="form-message error">
+              <div className="form-message error warning-message-box">
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <circle cx="10" cy="10" r="9" stroke="currentColor" strokeWidth="2"/>
                   <path d="M10 6V10M10 14H10.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                 </svg>
-                <span>{error}</span>
+                <div className="error-content">
+                  <span className="error-text">{error.split('\n')[0]}</span>
+                  {error.includes('\n') && (
+                    <pre className="error-details">{error.split('\n').slice(1).join('\n')}</pre>
+                  )}
+                </div>
               </div>
             )}
 

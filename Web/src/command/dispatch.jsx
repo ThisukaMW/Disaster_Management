@@ -44,10 +44,42 @@ const pinIcon = L.icon({
   className: "custom-pin",
 });
 
+// Utility function to detect duplicate coordinates
+const COORDINATE_TOLERANCE = 0.0001;
+
+function findDuplicateCoordinates(incidents, currentIncident) {
+  if (!currentIncident.latitude || !currentIncident.longitude) return [];
+  
+  const lat = Number(currentIncident.latitude);
+  const lng = Number(currentIncident.longitude);
+  
+  return incidents.filter(inc => {
+    if (inc.id === currentIncident.id) return false;
+    if (!inc.latitude || !inc.longitude) return false;
+    
+    const incLat = Number(inc.latitude);
+    const incLng = Number(inc.longitude);
+    
+    const latDiff = Math.abs(lat - incLat);
+    const lngDiff = Math.abs(lng - incLng);
+    
+    return latDiff <= COORDINATE_TOLERANCE && lngDiff <= COORDINATE_TOLERANCE;
+  });
+}
+
+function severityLabel(severity) {
+  if (typeof severity === 'number') {
+    const severityMap = { 1: 'Critical', 2: 'High', 3: 'Medium', 4: 'Low', 5: 'Minimal' };
+    return severityMap[severity] || `Level ${severity}`;
+  }
+  return String(severity);
+}
+
 function Dispatch({ dispatchedTeams = [], setDispatchedTeams, resolvedIncidents = [], setResolvedIncidents }) {
   const [incidents, setIncidents] = useState([]);
   const [dispatchState, setDispatchState] = useState({});
   const [mapIncident, setMapIncident] = useState(null);
+  const [duplicateWarning, setDuplicateWarning] = useState(null);
 
   useEffect(() => {
     const unsubscribe = subscribeToIncidents((data) => {
@@ -230,14 +262,29 @@ function Dispatch({ dispatchedTeams = [], setDispatchedTeams, resolvedIncidents 
               const isDispatched = status === "Dispatched";
               const isResolved = status === "Resolved";
               const isNotDispatched = status === "Not dispatched";
+              const duplicates = findDuplicateCoordinates(incidents, incident);
+              const hasDuplicates = duplicates.length > 0;
               
               return (
                 <div 
                   key={incident.id} 
-                  className={`table-row ${isResolved ? "resolved-row" : ""}`} 
+                  className={`table-row ${isResolved ? "resolved-row" : ""} ${hasDuplicates ? "duplicate-location" : ""}`} 
                   role="row"
+                  onClick={() => {
+                    if (hasDuplicates) {
+                      setDuplicateWarning({ incident, duplicates });
+                    }
+                  }}
+                  style={{ cursor: hasDuplicates ? 'pointer' : 'default' }}
                 >
-                  <span>{incident.incidentType || "N/A"}</span>
+                  <span>
+                    {incident.incidentType || "N/A"}
+                    {hasDuplicates && (
+                      <span className="duplicate-warning-icon" title="Duplicate location detected">
+                        ⚠️
+                      </span>
+                    )}
+                  </span>
                   <span>{incident.severity ?? "N/A"}</span>
                   <span>
                     {incident.latitude != null && incident.longitude != null
@@ -337,6 +384,52 @@ function Dispatch({ dispatchedTeams = [], setDispatchedTeams, resolvedIncidents 
                   <p>Coordinates not available for this incident.</p>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Duplicate Location Warning Modal */}
+      {duplicateWarning && (
+        <div className="warning-modal" role="dialog" aria-modal="true" onClick={() => setDuplicateWarning(null)}>
+          <div className="warning-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="warning-modal-header">
+              <div>
+                <span className="warning-icon-large">⚠️</span>
+                <h3>Duplicate Location Detected</h3>
+              </div>
+              <button className="close-btn" onClick={() => setDuplicateWarning(null)}>
+                Close
+              </button>
+            </div>
+            <div className="warning-modal-body">
+              <p className="warning-message">
+                This location has already been reported to the system.
+              </p>
+              <div className="warning-details">
+                <p><strong>Current Incident:</strong></p>
+                <ul>
+                  <li>ID: {duplicateWarning.incident.id || "N/A"}</li>
+                  <li>Type: {duplicateWarning.incident.incidentType || "N/A"}</li>
+                  <li>Severity: {severityLabel(duplicateWarning.incident.severity)}</li>
+                  <li>
+                    Coordinates: {Number(duplicateWarning.incident.latitude).toFixed(6)}, {Number(duplicateWarning.incident.longitude).toFixed(6)}
+                  </li>
+                </ul>
+                <p><strong>Other Reports at This Location ({duplicateWarning.duplicates.length}):</strong></p>
+                <ul className="duplicate-list">
+                  {duplicateWarning.duplicates.map((dup, idx) => (
+                    <li key={dup.id || idx}>
+                      ID: {dup.id || "N/A"} | Type: {dup.incidentType || "N/A"} | Severity: {severityLabel(dup.severity)}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+            <div className="warning-modal-footer">
+              <button className="close-btn" onClick={() => setDuplicateWarning(null)}>
+                Understood
+              </button>
             </div>
           </div>
         </div>

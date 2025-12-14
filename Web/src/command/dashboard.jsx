@@ -3,7 +3,7 @@ import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "./dashboard.css";
-import { subscribeToIncidents } from "../firebase";
+import { subscribeToIncidents, subscribeToResponders } from "../firebase";
 
 function getSeverityLevel(severity) {
   if (typeof severity === 'number') {
@@ -57,12 +57,38 @@ const pinIcon = L.icon({
   className: "custom-pin",
 });
 
+// Utility function to detect duplicate coordinates
+// Tolerance: ~0.0001 degrees (approximately 10 meters)
+const COORDINATE_TOLERANCE = 0.0001;
+
+function findDuplicateCoordinates(incidents, currentIncident) {
+  if (!currentIncident.latitude || !currentIncident.longitude) return [];
+  
+  const lat = Number(currentIncident.latitude);
+  const lng = Number(currentIncident.longitude);
+  
+  return incidents.filter(inc => {
+    if (inc.id === currentIncident.id) return false;
+    if (!inc.latitude || !inc.longitude) return false;
+    
+    const incLat = Number(inc.latitude);
+    const incLng = Number(inc.longitude);
+    
+    const latDiff = Math.abs(lat - incLat);
+    const lngDiff = Math.abs(lng - incLng);
+    
+    return latDiff <= COORDINATE_TOLERANCE && lngDiff <= COORDINATE_TOLERANCE;
+  });
+}
+
 function Dashboard({ dispatchedTeams = [], resolvedIncidents = [] }) {
   const [incidents, setIncidents] = useState([]);
   const [tableIncidents, setTableIncidents] = useState([]);
+  const [responders, setResponders] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [mapIncident, setMapIncident] = useState(null);
   const [photoIncident, setPhotoIncident] = useState(null);
+  const [duplicateWarning, setDuplicateWarning] = useState(null);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -79,6 +105,7 @@ function Dashboard({ dispatchedTeams = [], resolvedIncidents = [] }) {
     return Number.isNaN(parsed.getTime()) ? 0 : parsed.getTime();
   };
 
+  // Subscribe to incidents
   useEffect(() => {
     setLoading(true);
     setError(null);
@@ -99,6 +126,31 @@ function Dashboard({ dispatchedTeams = [], resolvedIncidents = [] }) {
     });
     return () => unsubscribe();
   }, []);
+
+  // Subscribe to responders to build UID to name mapping
+  useEffect(() => {
+    const unsubscribe = subscribeToResponders((data) => {
+      setResponders(data);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Create a map of UID to responder name for quick lookup
+  const responderMap = useMemo(() => {
+    const map = new Map();
+    responders.forEach((responder) => {
+      if (responder.id && responder.name) {
+        map.set(responder.id, responder.name);
+      }
+    });
+    return map;
+  }, [responders]);
+
+  // Helper function to get responder name from userId
+  const getResponderName = (userId) => {
+    if (!userId) return "N/A";
+    return responderMap.get(userId) || "Unknown";
+  };
 
   // Get unique incident types from incidents
   const incidentTypes = useMemo(() => {
@@ -257,6 +309,7 @@ function Dashboard({ dispatchedTeams = [], resolvedIncidents = [] }) {
             <div className="table-head" role="row">
               <span>Incident Type</span>
               <span>Severity</span>
+              <span>Responder</span>
               <span>Latitude</span>
               <span>Longitude</span>
               <span>Received Time</span>
@@ -284,18 +337,36 @@ function Dashboard({ dispatchedTeams = [], resolvedIncidents = [] }) {
               ) : (
                 filteredIncidents
                   .slice((page - 1) * pageSize, page * pageSize)
-                  .map((incident) => (
-                  <div
-                    key={incident.id}
-                    className={`table-row ${selectedId === incident.id ? "selected" : ""}`}
-                    role="row"
-                    onClick={() =>
-                      setSelectedId((prev) => (prev === incident.id ? null : incident.id))
-                    }
-                  >
-                    <span>{incident.incidentType || "N/A"}</span>
+                  .map((incident) => {
+                    const duplicates = findDuplicateCoordinates(incidents, incident);
+                    const hasDuplicates = duplicates.length > 0;
+                    
+                    return (
+                      <div
+                      key={incident.id}
+                      className={`table-row ${selectedId === incident.id ? "selected" : ""} ${hasDuplicates ? "duplicate-location" : ""}`}
+                      role="row"
+                      onClick={() => {
+                        if (hasDuplicates) {
+                          setDuplicateWarning({ incident, duplicates });
+                        } else {
+                          setSelectedId((prev) => (prev === incident.id ? null : incident.id));
+                        }
+                      }}
+                    >
+                    <span>
+                      {incident.incidentType || "N/A"}
+                      {hasDuplicates && (
+                        <span className="duplicate-warning-icon" title="Duplicate location detected">
+                          ⚠️
+                        </span>
+                      )}
+                    </span>
                     <span className={severityClass(incident.severity)}>
                       {severityLabel(incident.severity)}
+                    </span>
+                    <span className="responder-name-cell">
+                      {getResponderName(incident.userId)}
                     </span>
                     <span>
                       {incident.latitude != null ? Number(incident.latitude).toFixed(6) : "N/A"}
@@ -331,8 +402,9 @@ function Dashboard({ dispatchedTeams = [], resolvedIncidents = [] }) {
                         View
                       </button>
                     </span>
-                  </div>
-                ))
+                      </div>
+                    );
+                  })
               )}
             </div>
             {filteredIncidents.length > 0 && (
@@ -448,6 +520,52 @@ function Dashboard({ dispatchedTeams = [], resolvedIncidents = [] }) {
                   <p>No photo available for this incident.</p>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Duplicate Location Warning Modal */}
+      {duplicateWarning && (
+        <div className="warning-modal" role="dialog" aria-modal="true" onClick={() => setDuplicateWarning(null)}>
+          <div className="warning-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="warning-modal-header">
+              <div>
+                <span className="warning-icon-large">⚠️</span>
+                <h3>Duplicate Location Detected</h3>
+              </div>
+              <button className="close-btn" onClick={() => setDuplicateWarning(null)}>
+                Close
+              </button>
+            </div>
+            <div className="warning-modal-body">
+              <p className="warning-message">
+                This location has already been reported to the system.
+              </p>
+              <div className="warning-details">
+                <p><strong>Current Incident:</strong></p>
+                <ul>
+                  <li>ID: {duplicateWarning.incident.id || "N/A"}</li>
+                  <li>Type: {duplicateWarning.incident.incidentType || "N/A"}</li>
+                  <li>Severity: {severityLabel(duplicateWarning.incident.severity)}</li>
+                  <li>
+                    Coordinates: {Number(duplicateWarning.incident.latitude).toFixed(6)}, {Number(duplicateWarning.incident.longitude).toFixed(6)}
+                  </li>
+                </ul>
+                <p><strong>Other Reports at This Location ({duplicateWarning.duplicates.length}):</strong></p>
+                <ul className="duplicate-list">
+                  {duplicateWarning.duplicates.map((dup, idx) => (
+                    <li key={dup.id || idx}>
+                      ID: {dup.id || "N/A"} | Type: {dup.incidentType || "N/A"} | Severity: {severityLabel(dup.severity)}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+            <div className="warning-modal-footer">
+              <button className="close-btn" onClick={() => setDuplicateWarning(null)}>
+                Understood
+              </button>
             </div>
           </div>
         </div>
