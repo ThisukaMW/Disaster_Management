@@ -1,0 +1,13 @@
+{
+  "projects": {
+    "default": "disaster-management-app-3b9ce"
+  },
+  "targets": {
+    "disaster-management-app-3b9ce": {
+      "hosting": {
+        "disaster-management-app-3b9ce": ["disaster-management-app-3b9ce"],
+        "disaster-management-app-host": ["disaster-management-app-host"]
+      }
+    }
+  }
+}

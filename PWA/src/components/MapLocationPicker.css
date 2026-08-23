@@ -1,0 +1,163 @@
+.map-location-picker {
+  width: 100%;
+  margin: 20px 0;
+}
+
+.map-picker-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.map-picker-header h3 {
+  margin: 0;
+  color: #1f2937;
+  font-size: 22px; /* Larger for visibility */
+  font-weight: 700;
+}
+
+/* Crisis-Optimized GPS Button - Large, Easy to Tap */
+.use-gps-button {
+  min-height: 56px; /* Large touch target */
+  padding: 16px 24px;
+  background: #4b5563;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 18px; /* Larger text */
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  border: 3px solid #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.use-gps-button:hover:not(:disabled) {
+  background: #374151;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+  transform: translateY(-1px);
+}
+
+.use-gps-button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.use-gps-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.map-container-wrapper {
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  position: relative;
+  width: 100%;
+  height: 400px;
+}
+
+.map-container-wrapper .leaflet-container {
+  height: 100%;
+  width: 100%;
+  z-index: 1;
+}
+
+.selected-location-info {
+  margin-top: 12px;
+  padding: 12px;
+  background-color: #374151;
+  border: 2px solid #4b5563;
+  border-radius: 8px;
+  color: #d1d5db;
+  font-size: 14px;
+}
+
+.selected-location-info p {
+  margin: 4px 0;
+}
+
+.map-instruction {
+  margin-top: 8px !important;
+  font-style: italic;
+  color: #9ca3af;
+}
+
+.location-loading-message {
+  padding: 12px;
+  background-color: #374151;
+  color: #d1d5db;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.map-error-message {
+  padding: 16px;
+  background-color: #fef3c7;
+  color: #92400e;
+  border: 2px solid #f59e0b;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.map-error-message p {
+  margin: 4px 0;
+}
+
+.location-info-panel {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.current-location-info {
+  padding: 12px;
+  background-color: #374151;
+  border: 2px solid #4b5563;
+  border-radius: 8px;
+  color: #d1d5db;
+  font-size: 14px;
+}
+
+.current-location-info p {
+  margin: 4px 0;
+}
+
+.selected-location-marker {
+  filter: hue-rotate(0deg) saturate(2) brightness(0.8);
+}
+
+.selected-location-marker img {
+  filter: hue-rotate(0deg) saturate(2) brightness(0.8) !important;
+  -webkit-filter: hue-rotate(0deg) saturate(2) brightness(0.8) !important;
+}
+
+/* Make the marker red by using CSS filter */
+.leaflet-marker-icon.selected-location-marker {
+  filter: hue-rotate(0deg) saturate(2) brightness(0.8);
+}
+
+.leaflet-marker-icon.selected-location-marker img {
+  filter: hue-rotate(0deg) saturate(2) brightness(0.8) !important;
+}
+
+.current-location-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Leaflet map container styles */
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+  z-index: 1;
+}
+

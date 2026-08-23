@@ -1,188 +1,111 @@
-⛑️ ResQ: Offline-First Disaster Response System
-Project Aegis (ResQ) is a resilient disaster management platform built for the Ratnapura Flood Crisis. It consists of two interconnected applications: an offline-first Mobile PWA for field responders and a real-time Command Dashboard for headquarters.
+# ⛑️ ResQ: Offline-First Disaster Response System
 
-🔗 Live Demo (Judges Access)
-📱 Field Responder App (PWA): https://disaster-management-app-3b9ce.web.app
+**Project Aegis (ResQ)** is a resilient disaster management platform built for the Ratnapura Flood Crisis. It consists of two interconnected applications: an **offline-first Mobile PWA** for field responders and a **real-time Command Dashboard** for headquarters.
 
-🖥️ HQ Command Dashboard: https://disaster-management-app-host.web.app/
+## 🔗 Live Demo
 
-🏗️ Tech Stack
-Core Architecture
-Frontend: React 18 + Vite
+- 📱 **Field Responder App (PWA):** https://disaster-management-app-3b9ce.web.app
+- 🖥️ **HQ Command Dashboard:** https://disaster-management-app-host.web.app/
 
-PWA Engine: vite-plugin-pwa (Service Workers & Manifest)
+## 🏗️ Tech Stack
 
-Language: JavaScript (ES6+)
+**Core Architecture**
+- Frontend: React 18/19 + Vite
+- PWA Engine: `vite-plugin-pwa` (Service Workers & Manifest)
+- Language: JavaScript (ES6+)
 
-Backend & Data
-Cloud Backend: Firebase (Firestore, Auth, Hosting)
+**Backend & Data**
+- Cloud Backend: Firebase (Firestore, Auth, Hosting)
+- Local Database: Dexie.js (IndexedDB wrapper) — ensures offline functionality
+- Sync Engine: custom "foreground sync" logic (iOS-compliant)
 
-Local Database: Dexie.js (IndexedDB Wrapper) - Ensures 100% offline functionality
+**Maps & Visualization**
+- Maps: Leaflet.js + OpenStreetMap (cached tiles for offline use)
+- Styles: CSS Modules (dark mode supported)
 
-Sync Engine: Custom "Foreground Sync" logic (iOS Compliant)
+## 📁 Project Structure
 
-Maps & Visualization
-Maps: Leaflet.js + OpenStreetMap (Cached tiles for offline use)
+```
+Backend/    Shared Firebase config reference
+PWA/        Field Responder mobile app (offline-first)
+Web/        HQ Command Dashboard
+docs/       Setup, architecture, and feature documentation
+```
 
-Styles: CSS Modules (Dark Mode optimized)
+## 🚀 Prerequisites
 
-🚀 Prerequisites
-Before you start, ensure you have the following installed globally:
+- Node.js (v16 or higher)
+- npm (comes with Node)
+- Firebase CLI (`npm install -g firebase-tools`)
 
-Node.js (v16 or higher)
+## 📱 Component A: Field Responder PWA
 
-npm (comes with Node)
+The mobile-first application used by responders in the field. Capable of working in Airplane Mode and syncing data when connectivity returns.
 
-Firebase CLI (npm install -g firebase-tools)
-
-📱 Component A: Field Responder PWA (dev-geemal)
-The mobile-first application used by responders in the field. Capable of working in "Airplane Mode" and syncing data when connectivity returns.
-
-1. Setup & Installation
-Navigate to the PWA directory:
-
-Bash
-
-cd dev-geemal
+```bash
+cd PWA
 npm install
-2. Key Dependencies
-The following critical packages will be installed:
-
-firebase: For Cloud Firestore and Authentication.
-
-dexie: For the local offline database (IndexedDB).
-
-vite-plugin-pwa: To generate the Service Worker.
-
-leaflet & react-leaflet: For map visualization.
-
-react-router-dom: For client-side routing.
-
-3. Environment Configuration
-Ensure your src/services/firebase.js contains your Firebase credentials:
-
-JavaScript
-
-import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
-
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "disaster-management-app-3b9ce.firebaseapp.com",
-  projectId: "disaster-management-app-3b9ce",
-  // ... other config keys
-};
-4. Run Locally
-Bash
-
 npm run dev
+```
+
 Access at: http://localhost:5173
 
-🖥️ Component B: HQ Command Dashboard (dev-chanith)
-The web-based dashboard for headquarters to visualize incidents, track responder status, and manage resources in real-time.
+Key dependencies: `firebase`, `dexie` (offline database), `vite-plugin-pwa`, `leaflet` / `react-leaflet`, `react-router-dom`.
 
-1. Setup & Installation
-Navigate to the Web Dashboard directory:
+## 🖥️ Component B: HQ Command Dashboard
 
-Bash
+The web-based dashboard for headquarters to visualize incidents, track responder status, and manage resources in real time.
 
-cd dev-chanith
+```bash
+cd Web
 npm install
-2. Key Dependencies
-firebase: For real-time data listeners (onSnapshot).
-
-leaflet: For plotting incident clusters on the map.
-
-chart.js (Optional): For statistical analytics.
-
-3. Run Locally
-Bash
-
 npm run dev
-Access at: http://localhost:5174 (Port may vary)
+```
 
-☁️ Deployment Guide (Firebase Hosting)
-Since we host two separate apps (PWA and Web) on different URLs, the deployment process involves targeting specific sites.
+Access at: http://localhost:5174 (port may vary)
 
-1. Login to Firebase
-Bash
+Key dependencies: `firebase` (real-time listeners via `onSnapshot`), `leaflet` (incident map clustering).
 
-firebase login
-2. Build for Production
-You must create the production build artifacts before deploying.
+## ☁️ Deployment
 
-For PWA (dev-geemal):
+Both apps deploy to separate Firebase Hosting sites from the same project.
 
-Bash
+```bash
+# Build each app
+cd PWA && npm run build && cd ..
+cd Web && npm run build && cd ..
 
-cd dev-geemal
-npm run build
-For Web (dev-chanith):
+# Deploy each target
+firebase deploy --only hosting:disaster-management-app-3b9ce   # PWA
+firebase deploy --only hosting:disaster-management-app-host    # Web dashboard
+```
 
-Bash
+See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for full details.
 
-cd ../dev-chanith
-npm run build
-3. Deploy
-Deploy the specific builds to their respective hosting targets.
+## 🧪 Testing Offline Mode
 
-Deploy PWA:
+1. Open the PWA on a mobile device and log in once while online.
+2. Turn on Airplane Mode.
+3. Submit an incident report — a "Saved Locally" confirmation appears.
+4. Close and reopen the app while still offline — the report is still queued under "Pending Sync".
+5. Reconnect to the internet — the app auto-detects the network and syncs. Check the HQ Dashboard for the new pin.
 
-Bash
+See [docs/TESTING.md](docs/TESTING.md) for the full manual test guide.
 
-firebase deploy --only hosting:disaster-management-app-3b9ce
-Deploy Web Dashboard:
+## 📚 Documentation
 
-Bash
+- [docs/SETUP.md](docs/SETUP.md) — full setup and Firebase configuration
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — tech stack, folder structure, data flow
+- [docs/FEATURES.md](docs/FEATURES.md) — implemented feature list
+- [docs/SYNC_ENGINE.md](docs/SYNC_ENGINE.md) — offline-first sync design
+- [docs/TESTING.md](docs/TESTING.md) — manual test guide
+- [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) — Firebase Hosting deployment
+- [docs/USER_GUIDE.md](docs/USER_GUIDE.md) — end-user guide
+- [docs/LOCATION_PERMISSIONS.md](docs/LOCATION_PERMISSIONS.md) — location permission handling
+- [docs/HACKATHON_COMPLIANCE.md](docs/HACKATHON_COMPLIANCE.md) — requirements checklist
+- [docs/ROADMAP.md](docs/ROADMAP.md) — future ideas (not yet implemented)
 
-firebase deploy --only hosting:disaster-management-app-host
-🧪 Testing the "Offline Mode" (Judge's Guide)
-To verify the Offline-First capabilities:
+## 👥 Contributors
 
-Open the PWA Live Link on a mobile device.
-
-Login once while online (this caches your session).
-
-Turn on Airplane Mode (ensure WiFi is off).
-
-Submit a "Landslide" report.
-
-Observation: You will see a "Saved Locally" toast notification.
-
-Kill the app completely (Swipe away from recent apps).
-
-Re-open the app (still offline).
-
-Observation: Go to the "Pending Sync" tab. The report is still safe.
-
-Turn Internet On.
-
-Observation: The app auto-detects the network and syncs. Check the HQ Dashboard to see the pin drop instantly!
-
-👥 Contributors
-PWA / Offline Logic: Geemal (dev-geemal)
-
-Web / Dashboard: Chanith (dev-chanith)
-
-🚀 Final Step for You:
-Since you have two separate folders (dev-geemal and dev-chanith), ensure that the firebase.json file in your root directory (or inside each folder) is correctly configured to point to the dist folder of each build.
-
-If you are running the deploy command from the root, your firebase.json should look like this:
-
-JSON
-
-{
-  "hosting": [
-    {
-      "target": "disaster-management-app-3b9ce",
-      "public": "dev-geemal/dist",
-      "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
-      "rewrites": [{"source": "**", "destination": "/index.html"}]
-    },
-    {
-      "target": "disaster-management-app-host",
-      "public": "dev-chanith/dist",
-      "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
-      "rewrites": [{"source": "**", "destination": "/index.html"}]
-    }
-  ]
+- **PWA / Offline Logic:** Geemal ([dev-geemal](../../tree/dev-geemal) branch)
+- **Web / Dashboard:** Chanith ([dev-chanith](../../tree/dev-chanith) branch)
